@@ -43,8 +43,8 @@ class PgnFilerSortExportOptions {
 
   constructor() {
     this.themeFilters = new Set();
-    this.minRating = ceilingPuzzleRating;
-    this.maxRating = floorPuzzleRating;
+    this.minRating = floorPuzzleRating;
+    this.maxRating = ceilingPuzzleRating;
     this.includeTags = true;
     this.includeComments = false;
   }
@@ -97,9 +97,9 @@ class Controller {
   constructor(elem: HTMLElement) {
     this.ops = new PgnFilerSortExportOptions();
     this.dropdowns = {
-      filter: false,
+      filter: true,
       sortBy: true,
-      exportOptions: false,
+      exportOptions: true,
     };
 
     this.old = elem;
@@ -120,17 +120,26 @@ class Controller {
               "label.label",
               h("span.label-text", `Minimum Rating: ${this.ops.minRating}`),
             ),
-            h("input.range.range-primary.w-full", {
+            // we use `transform -scale-x-100` to get a right-to-left slider
+            // but then values are inverted, so we have to do some math
+            h("input.range.range-primary.w-full.transform -scale-x-100", {
               attrs: {
                 type: "range",
                 min: floorPuzzleRating,
                 max: ceilingPuzzleRating,
-                value: this.ops.minRating,
+                value:
+                  //
+                  ceilingPuzzleRating - this.ops.minRating + floorPuzzleRating,
               },
               on: {
                 input: (e: any) => {
                   // @ts-ignore
                   console.log(e.target.value);
+                  this.ops.minRating =
+                    ceilingPuzzleRating -
+                    Number(e.target.value) +
+                    floorPuzzleRating;
+                  this.redraw();
                 },
               },
             }),
@@ -141,13 +150,24 @@ class Controller {
           ]),
           // Max Rating
           h("div", [
-            h("label.label", h("span.label-text", "Maximum Rating")),
+            h(
+              "label.label",
+              h("span.label-text", `Maximum Rating: ${this.ops.maxRating}`),
+            ),
             h("input.range.range-secondary.w-full", {
               attrs: {
                 type: "range",
                 min: floorPuzzleRating,
                 max: ceilingPuzzleRating,
                 value: this.ops.maxRating,
+              },
+              on: {
+                input: (e: any) => {
+                  // @ts-ignore
+                  console.log(e.target.value);
+                  //this.ops.maxRating = Number(e.target.value);
+                  //this.redraw();
+                },
               },
             }),
             h("div.flex.justify-between.text-xs.opacity-70", [
