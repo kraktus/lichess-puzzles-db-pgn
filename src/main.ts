@@ -1,5 +1,4 @@
 import "./style.css";
-console.log("TEST");
 import {
   init,
   classModule,
@@ -10,6 +9,11 @@ import {
   h,
   type VNode,
 } from "snabbdom";
+
+import { type Theme } from "./themes";
+
+const VERSION = "v0.0.1";
+console.log(VERSION);
 
 const patch = init([
   // Init patch function with chosen modules
@@ -22,7 +26,7 @@ const patch = init([
 
 class PgnExportOptions {
   // first level of sets for OR within a group, second set for AND between groups
-  themeFilters: Set<Set<string>>;
+  themeFilters: Set<Set<Theme>>;
   minRating?: number;
   maxRating?: number;
   maxPuzzles?: number;
@@ -42,7 +46,7 @@ const footer = h("div.dropup", [
           href: "/li-network/v0-1.html",
         },
       },
-      "v: 0.1",
+      VERSION,
     ),
   ]),
 ]);
@@ -216,7 +220,6 @@ class Controller {
   // }
 }
 
-console.log("v0.0.1");
 const container = document.getElementById("container")!;
 const ctrl = new Controller(container);
 ctrl.redraw();
