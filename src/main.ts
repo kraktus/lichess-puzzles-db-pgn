@@ -11,9 +11,7 @@ import {
 } from "snabbdom";
 
 import { type Theme } from "./themes";
-
-const VERSION = "v0.0.1";
-console.log(VERSION);
+import { section } from "./view";
 
 const patch = init([
   // Init patch function with chosen modules
@@ -24,16 +22,38 @@ const patch = init([
   eventListenersModule, // attaches event listeners
 ]);
 
-class PgnExportOptions {
+const VERSION = "v0.0.1";
+console.log(VERSION);
+
+const floorPuzzleRating = 400;
+const ceilingPuzzleRating = 4000; // TODO check that
+
+class PgnFilerSortExportOptions {
   // first level of sets for OR within a group, second set for AND between groups
   themeFilters: Set<Set<Theme>>;
-  minRating?: number;
-  maxRating?: number;
+  minRating: number;
+  maxRating: number;
   maxPuzzles?: number;
+
+  // if nothing set, unordered, in the order of retrieval
+  sortBy?: "rating" | "popularity";
+
+  includeTags: boolean;
+  includeComments: boolean;
 
   constructor() {
     this.themeFilters = new Set();
+    this.minRating = ceilingPuzzleRating;
+    this.maxRating = floorPuzzleRating;
+    this.includeTags = true;
+    this.includeComments = false;
   }
+}
+// whether each dropdown is opened
+interface DropdownsState {
+  filter: boolean;
+  sortBy: boolean;
+  exportOptions: boolean;
 }
 
 const footer = h("div.dropup", [
@@ -69,12 +89,19 @@ const rangeInput = (
   });
 
 class Controller {
-  ops: PgnExportOptions;
+  ops: PgnFilerSortExportOptions;
+  dropdowns: DropdownsState;
 
   old: HTMLElement | VNode;
 
   constructor(elem: HTMLElement) {
-    this.ops = new PgnExportOptions();
+    this.ops = new PgnFilerSortExportOptions();
+    this.dropdowns = {
+      filter: false,
+      sortBy: true,
+      exportOptions: false,
+    };
+
     this.old = elem;
   }
   redraw() {
@@ -83,106 +110,109 @@ class Controller {
   view(): VNode {
     return h("div.max-w-4xl.mx-auto.py-10.px-4", [
       h("h1.text-2xl.mb-8.text-center", "Lichess Puzzles to PGN"),
-
       // Collapsible Sections
       h("div.space-y-4", [
         // Filter Section
-        h("div.collapse.collapse-arrow.bg-base-300", [
-          h("input", { attrs: { type: "checkbox" } }),
-          h("div.collapse-title.text-lg.font-semibold", "Filter"),
-          h("div.collapse-content.space-y-6", [
-            // Min Rating
-            h("div", [
-              h("label.label", h("span.label-text", "Minimum Rating")),
-              h("input.range.range-primary.w-full", {
-                attrs: { type: "range", min: 400, max: 2800, value: 2800 },
-              }),
-              h("div.flex.justify-between.text-xs.opacity-70", [
-                h("span", "400"),
-                h("span", "2800"),
-              ]),
+        section("Filter", this.dropdowns.filter, [
+          // Min Rating
+          h("div", [
+            h(
+              "label.label",
+              h("span.label-text", `Minimum Rating: ${this.ops.minRating}`),
+            ),
+            h("input.range.range-primary.w-full", {
+              attrs: {
+                type: "range",
+                min: floorPuzzleRating,
+                max: ceilingPuzzleRating,
+                value: this.ops.minRating,
+              },
+              on: {
+                input: (e: any) => {
+                  // @ts-ignore
+                  console.log(e.target.value);
+                },
+              },
+            }),
+            h("div.flex.justify-between.text-xs.opacity-70", [
+              h("span", floorPuzzleRating),
+              h("span", ceilingPuzzleRating),
             ]),
-            // Max Rating
-            h("div", [
-              h("label.label", h("span.label-text", "Maximum Rating")),
-              h("input.range.range-secondary.w-full", {
-                attrs: { type: "range", min: 400, max: 2800, value: 2800 },
-              }),
-              h("div.flex.justify-between.text-xs.opacity-70", [
-                h("span", "400"),
-                h("span", "2800"),
-              ]),
+          ]),
+          // Max Rating
+          h("div", [
+            h("label.label", h("span.label-text", "Maximum Rating")),
+            h("input.range.range-secondary.w-full", {
+              attrs: {
+                type: "range",
+                min: floorPuzzleRating,
+                max: ceilingPuzzleRating,
+                value: this.ops.maxRating,
+              },
+            }),
+            h("div.flex.justify-between.text-xs.opacity-70", [
+              h("span", floorPuzzleRating),
+              h("span", ceilingPuzzleRating),
             ]),
-            // Themes
-            h("div", [
-              h("label.label", h("span.label-text", "Theme")),
-              h("select.select.select-bordered.w-full", [
-                h(
-                  "option",
-                  { attrs: { disabled: true, selected: true } },
-                  "Choose a theme",
-                ),
-                h("option", "Pin"),
-                h("option", "Fork"),
-                h("option", "Discovered Attack"),
-                h("option", "Endgame"),
-                h("option", "Opening Trap"),
-              ]),
-            ]),
-            // Max Puzzles
-            h("div", [
+          ]),
+          // Themes
+          h("div", [
+            h("label.label", h("span.label-text", "Theme")),
+            h("select.select.select-bordered.w-full", [
               h(
-                "label.label",
-                h("span.label-text", "Maximum Number of Puzzles"),
+                "option",
+                { attrs: { disabled: true, selected: true } },
+                "Choose a theme",
               ),
-              h("input.range.range-accent", {
-                attrs: { type: "range", min: 10, max: 5000, value: 1000 },
-              }),
-              h("div.flex.justify-between.text-xs.opacity-70", [
-                h("span", "10"),
-                h("span", "5000"),
-              ]),
+              h("option", "Pin"),
+              h("option", "Fork"),
+              h("option", "Discovered Attack"),
+              h("option", "Endgame"),
+              h("option", "Opening Trap"),
+            ]),
+          ]),
+          // Max Puzzles
+          h("div", [
+            h("label.label", h("span.label-text", "Maximum Number of Puzzles")),
+            h("input.range.range-accent", {
+              attrs: { type: "range", min: 10, max: 5000, value: 1000 },
+            }),
+            h("div.flex.justify-between.text-xs.opacity-70", [
+              h("span", "10"),
+              h("span", "5000"),
             ]),
           ]),
         ]),
-
+        ,
         // Sort Section
-        h("div.collapse.collapse-arrow.bg-base-300", [
-          h("input", { attrs: { type: "checkbox", checked: true } }),
-          h("div.collapse-title.text-lg.font-semibold", "Sort by"),
-          h("div.collapse-content.space-y-3", [
-            h("label.cursor-pointer.flex.items-center.gap-2", [
-              h("input.radio.radio-primary", {
-                attrs: { type: "radio", name: "sort" },
-              }),
-              h("span", "Rating"),
-            ]),
-            h("label.cursor-pointer.flex.items-center.gap-2", [
-              h("input.radio.radio-secondary", {
-                attrs: { type: "radio", name: "sort" },
-              }),
-              h("span", "Popularity"),
-            ]),
+        section("Sort by", this.dropdowns.sortBy, [
+          h("label.cursor-pointer.flex.items-center.gap-2", [
+            h("input.radio.radio-primary", {
+              attrs: { type: "radio", name: "sort" },
+            }),
+            h("span", "Rating"),
+          ]),
+          h("label.cursor-pointer.flex.items-center.gap-2", [
+            h("input.radio.radio-secondary", {
+              attrs: { type: "radio", name: "sort" },
+            }),
+            h("span", "Popularity"),
           ]),
         ]),
 
         // Include Section
-        h("div.collapse.collapse-arrow.bg-base-300", [
-          h("input", { attrs: { type: "checkbox" } }),
-          h("div.collapse-title.text-lg.font-semibold", "Include"),
-          h("div.collapse-content.space-y-3", [
-            h("label.cursor-pointer.flex.items-center.gap-2", [
-              h("input.checkbox.checkbox-primary", {
-                attrs: { type: "checkbox" },
-              }),
-              h("span", "Puzzle characteristics as PGN tags"),
-            ]),
-            h("label.cursor-pointer.flex.items-center.gap-2", [
-              h("input.checkbox.checkbox-secondary", {
-                attrs: { type: "checkbox" },
-              }),
-              h("span", "Puzzle characteristics as PGN comment"),
-            ]),
+        section("Export options", this.dropdowns.exportOptions, [
+          h("label.cursor-pointer.flex.items-center.gap-2", [
+            h("input.checkbox.checkbox-primary", {
+              attrs: { type: "checkbox" },
+            }),
+            h("span", "Puzzle characteristics as PGN tags"),
+          ]),
+          h("label.cursor-pointer.flex.items-center.gap-2", [
+            h("input.checkbox.checkbox-secondary", {
+              attrs: { type: "checkbox" },
+            }),
+            h("span", "Puzzle characteristics as PGN comment"),
           ]),
         ]),
       ]),
@@ -194,14 +224,12 @@ class Controller {
     ]);
   }
 
-  // private bind(f: (e: any) => void) {
-  //   return (e: any) => {
-  //     // @ts-ignore
-  //     f(e);
-  //     this.redraw();
-  //     this.graph?.redraw();
-  //   };
-  // }
+  private bind(f: (e: any) => void) {
+    return (e: any) => {
+      // @ts-ignore
+      f(e);
+    };
+  }
 
   // private simpleSimulUpdate(key: string) {
   //   return this.bind((e: any) => {
