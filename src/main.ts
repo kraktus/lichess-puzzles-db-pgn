@@ -1,9 +1,5 @@
 import "./style.css";
-// import './github.css';
-// import './graph.ts';
-// import { Config, defaultConfig } from './config.ts';
-// import { Graph } from './graph.ts';
-
+console.log("TEST");
 import {
   init,
   classModule,
@@ -12,7 +8,7 @@ import {
   styleModule,
   eventListenersModule,
   h,
-  VNode,
+  type VNode,
 } from "snabbdom";
 
 const patch = init([
@@ -24,14 +20,18 @@ const patch = init([
   eventListenersModule, // attaches event listeners
 ]);
 
-class PuzzleOptions {
-  minRating?: number;
-  maxRating?: number;
+class PgnExportOptions {
   // first level of sets for OR within a group, second set for AND between groups
   themeFilters: Set<Set<string>>;
+  minRating?: number;
+  maxRating?: number;
+  maxPuzzles?: number;
+
+  constructor() {
+    this.themeFilters = new Set();
+  }
 }
 
-const strong = (v: string | VNode) => h("strong", v);
 const footer = h("div.dropup", [
   h("button.dropbtn", "v: latest"),
   h("div.dropup-content", [
@@ -65,14 +65,12 @@ const rangeInput = (
   });
 
 class Controller {
-  searchButtonLabel: "Start" | "Stop" | "Restart";
-  config: Config;
+  ops: PgnExportOptions;
 
   old: HTMLElement | VNode;
 
   constructor(elem: HTMLElement) {
-    this.config = defaultConfig;
-    //this.searchButtonLabel = 'Start';
+    this.ops = new PgnExportOptions();
     this.old = elem;
   }
   redraw() {
@@ -192,33 +190,33 @@ class Controller {
     ]);
   }
 
-  private bind(f: (e: any) => void) {
-    return (e: any) => {
-      // @ts-ignore
-      f(e);
-      this.redraw();
-      this.graph?.redraw();
-    };
-  }
+  // private bind(f: (e: any) => void) {
+  //   return (e: any) => {
+  //     // @ts-ignore
+  //     f(e);
+  //     this.redraw();
+  //     this.graph?.redraw();
+  //   };
+  // }
 
-  private simpleSimulUpdate(key: string) {
-    return this.bind((e: any) => {
-      // @ts-ignore
-      this.config.simulation[key] = Number(
-        (e.target as HTMLInputElement).value,
-      );
-    });
-  }
+  // private simpleSimulUpdate(key: string) {
+  //   return this.bind((e: any) => {
+  //     // @ts-ignore
+  //     this.config.simulation[key] = Number(
+  //       (e.target as HTMLInputElement).value,
+  //     );
+  //   });
+  // }
 
-  private simpleConfigUpdate(key: any) {
-    return this.bind((e: any) => {
-      // @ts-ignore
-      this.config[key] = Number((e.target as HTMLInputElement).value);
-    });
-  }
+  // private simpleConfigUpdate(key: any) {
+  //   return this.bind((e: any) => {
+  //     // @ts-ignore
+  //     this.config[key] = Number((e.target as HTMLInputElement).value);
+  //   });
+  // }
 }
 
-console.log("v0.2");
+console.log("v0.0.1");
 const container = document.getElementById("container")!;
 const ctrl = new Controller(container);
 ctrl.redraw();
