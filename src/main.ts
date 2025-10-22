@@ -71,22 +71,37 @@ const footer = h("div.dropup", [
   ]),
 ]);
 const rangeInput = (
+  title: string,
+  color: string,
   min: number,
   max: number,
-  step: number,
   value: number,
   onInput: (e: any) => void = (_) => {},
+  opts?: { invert: boolean },
 ) =>
-  h("input", {
-    attrs: {
-      type: "range",
-      min: min,
-      max: max,
-      step: step,
-      value: value,
-    },
-    on: { input: onInput },
-  });
+  h("div", [
+    h("label.label", h("span.label-text", title)),
+    h(
+      // we use `transform -scale-x-100` to get a right-to-left slider
+      // but then values are inverted, so we have to do some math
+      `input.range.range-${color}.w-full${opts?.invert ? " transform -scale-x-100" : ""}`,
+      {
+        attrs: {
+          type: "range",
+          min: min,
+          max: max,
+          value: value,
+        },
+        on: {
+          input: onInput,
+        },
+      },
+    ),
+    h("div.flex.justify-between.text-xs.opacity-70", [
+      h("span", floorPuzzleRating),
+      h("span", ceilingPuzzleRating),
+    ]),
+  ]);
 
 class Controller {
   ops: PgnFilerSortExportOptions;
@@ -115,66 +130,45 @@ class Controller {
         // Filter Section
         section("Filter", this.dropdowns.filter, [
           // Min Rating
-          h("div", [
-            h(
-              "label.label",
-              h("span.label-text", `Minimum Rating: ${this.ops.minRating}`),
-            ),
-            // we use `transform -scale-x-100` to get a right-to-left slider
-            // but then values are inverted, so we have to do some math
-            h("input.range.range-primary.w-full.transform -scale-x-100", {
-              attrs: {
-                type: "range",
-                min: floorPuzzleRating,
-                max: ceilingPuzzleRating,
-                value:
-                  //
-                  ceilingPuzzleRating - this.ops.minRating + floorPuzzleRating,
-              },
-              on: {
-                input: (e: any) => {
-                  // @ts-ignore
-                  console.log(e.target.value);
-                  this.ops.minRating =
-                    ceilingPuzzleRating -
-                    Number(e.target.value) +
-                    floorPuzzleRating;
-                  this.redraw();
-                },
-              },
-            }),
-            h("div.flex.justify-between.text-xs.opacity-70", [
-              h("span", floorPuzzleRating),
-              h("span", ceilingPuzzleRating),
-            ]),
-          ]),
+          rangeInput(
+            `Minimum Rating: ${this.ops.minRating}`,
+            "primary",
+            floorPuzzleRating,
+            ceilingPuzzleRating,
+            ceilingPuzzleRating - this.ops.minRating + floorPuzzleRating,
+            (e: any) => {
+              this.ops.minRating =
+                ceilingPuzzleRating -
+                Number(e.target.value) +
+                floorPuzzleRating;
+              this.redraw();
+            },
+            { invert: true },
+          ),
           // Max Rating
-          h("div", [
-            h(
-              "label.label",
-              h("span.label-text", `Maximum Rating: ${this.ops.maxRating}`),
-            ),
-            h("input.range.range-secondary.w-full", {
-              attrs: {
-                type: "range",
-                min: floorPuzzleRating,
-                max: ceilingPuzzleRating,
-                value: this.ops.maxRating,
-              },
-              on: {
-                input: (e: any) => {
-                  // @ts-ignore
-                  console.log(e.target.value);
-                  //this.ops.maxRating = Number(e.target.value);
-                  //this.redraw();
+          rangeInput(
+            `Maximum Rating: ${this.ops.maxRating}`,
+            "secondary",
+            floorPuzzleRating,
+            ceilingPuzzleRating,
+            this.ops.maxRating,
+            (e: any) => {
+              this.ops.maxRating = Number(e.target.value);
+              this.redraw();
+            },
+          ),
+          this.ops.minRating > this.ops.maxRating
+            ? h(
+                "div.alert.alert-error.alert-soft",
+                {
+                  attrs: { role: "alert" },
                 },
-              },
-            }),
-            h("div.flex.justify-between.text-xs.opacity-70", [
-              h("span", floorPuzzleRating),
-              h("span", ceilingPuzzleRating),
-            ]),
-          ]),
+                h(
+                  "span",
+                  "Minimum rating cannot be greater than maximum rating.",
+                ),
+              )
+            : null,
           // Themes
           h("div", [
             h("label.label", h("span.label-text", "Theme")),
@@ -248,6 +242,7 @@ class Controller {
     return (e: any) => {
       // @ts-ignore
       f(e);
+      this.redraw();
     };
   }
 
