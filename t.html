@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lichess Puzzles to PGN</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/daisyui@5"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {},
+        },
+        plugins: [window.daisyui],
+        daisyui: {
+          themes: ["dark"],
+        },
+      };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.js"></script>
+  </head>
+  <body class="min-h-screen bg-base-200 text-base-content font-mono">
+    <div class="max-w-4xl mx-auto py-10 px-4">
+      <h1 class="text-2xl mb-8 text-center">Lichess Puzzles to PGN</h1>
+
+      <!-- Collapsible Sections -->
+      <div class="space-y-4">
+        <!-- Filter -->
+        <div class="collapse collapse-arrow bg-base-300">
+          <input type="checkbox" />
+          <div class="collapse-title text-lg font-semibold">Filter</div>
+          <div class="collapse-content space-y-6">
+            <!-- Min Rating -->
+            <div>
+              <label class="label">
+                <span class="label-text">Minimum Rating</span>
+              </label>
+              <input
+                type="range"
+                min="400"
+                max="2800"
+                value="2800"
+                class="range range-primary w-full transform -scale-x-100"
+              />
+              <div class="flex justify-between text-xs opacity-70">
+                <span>400</span>
+                <span>2800</span>
+              </div>
+            </div>
+
+            <!-- Max Rating -->
+            <div>
+              <label class="label">
+                <span class="label-text">Maximum Rating</span>
+              </label>
+              <input
+                type="range"
+                min="400"
+                max="2800"
+                value="2800"
+                class="range range-secondary w-full"
+              />
+              <div class="flex justify-between text-xs opacity-70">
+                <span>400</span>
+                <span>2800</span>
+              </div>
+            </div>
+
+            <!-- Themes -->
+            <div>
+              <label class="label">
+                <span class="label-text">Theme</span>
+              </label>
+              <select class="select select-bordered w-full">
+                <option disabled selected>Choose a theme</option>
+                <option>Pin</option>
+                <option>Fork</option>
+                <option>Discovered Attack</option>
+                <option>Endgame</option>
+                <option>Opening Trap</option>
+              </select>
+            </div>
+
+            <!-- Max Puzzles -->
+            <div>
+              <label class="label">
+                <span class="label-text">Maximum Number of Puzzles</span>
+              </label>
+              <input
+                type="range"
+                min="10"
+                max="5000"
+                value="1000"
+                class="range range-accent"
+              />
+              <div class="flex justify-between text-xs opacity-70">
+                <span>10</span>
+                <span>5000</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sort -->
+        <div class="collapse collapse-arrow bg-base-300">
+          <input type="checkbox" checked />
+          <div class="collapse-title text-lg font-semibold">Sort by</div>
+          <div class="collapse-content space-y-3">
+            <label class="cursor-pointer flex items-center gap-2">
+              <input type="radio" name="sort" class="radio radio-primary" />
+              <span>Rating</span>
+            </label>
+            <label class="cursor-pointer flex items-center gap-2">
+              <input type="radio" name="sort" class="radio radio-secondary" />
+              <span>Popularity</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Include -->
+        <div class="collapse collapse-arrow bg-base-300">
+          <input type="checkbox" />
+          <div class="collapse-title text-lg font-semibold">Include</div>
+          <div class="collapse-content space-y-3">
+            <label class="cursor-pointer flex items-center gap-2">
+              <input type="checkbox" class="checkbox checkbox-primary" />
+              <span>Puzzle characteristics as PGN tags</span>
+            </label>
+            <label class="cursor-pointer flex items-center gap-2">
+              <input type="checkbox" class="checkbox checkbox-secondary" />
+              <span>Puzzle characteristics as PGN comment</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <div class="text-center mt-8">
+        <button class="btn btn-primary btn-wide">Generate PGN</button>
+      </div>
+    </div>
+    <div id="container"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
