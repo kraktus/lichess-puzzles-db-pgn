@@ -9,7 +9,6 @@ import {
   h,
   type VNode,
 } from "snabbdom";
-import { OrderedSet } from "immutable";
 
 import { type Theme } from "./themes";
 import { section, themesMenu } from "./view";
@@ -31,7 +30,7 @@ const ceilingPuzzleRating = 4000; // TODO check that
 
 class PgnFilerSortExportOptions {
   // first level of sets for OR within a group, second set for AND between groups
-  themeFilters: OrderedSet<OrderedSet<Theme>>;
+  themeFilters: Set<Theme>[];
   minRating: number;
   maxRating: number;
   maxPuzzles?: number;
@@ -43,7 +42,7 @@ class PgnFilerSortExportOptions {
   includeComments: boolean;
 
   constructor() {
-    this.themeFilters = OrderedSet();
+    this.themeFilters = [];
     this.minRating = floorPuzzleRating;
     this.maxRating = ceilingPuzzleRating;
     this.includeTags = true;
@@ -186,7 +185,7 @@ class Controller {
           //     h("option", "Opening Trap"),
           //   ]),
           // ]),
-          themesMenu(OrderedSet()),
+          h("span", themesMenu(new Set())),
           // Max Puzzles
           h("div", [
             h("label.label", h("span.label-text", "Maximum Number of Puzzles")),

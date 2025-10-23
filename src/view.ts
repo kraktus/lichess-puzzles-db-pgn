@@ -1,5 +1,4 @@
 import { h, type VNode, type VNodeChildren } from "snabbdom";
-import { OrderedSet } from "immutable";
 
 import { puzzleCategories, type Theme } from "./themes";
 
@@ -15,15 +14,44 @@ export const section = (
   ]);
 
 const lia = (content: VNodeChildren): VNode => h("li", h("a", content));
-const ul = (content: VNodeChildren): VNode => h("ul", content);
+const ul = (content: VNodeChildren): VNode => h("ul.menu-dropdown", content);
 
-export const themesMenu = (currentFilters: OrderedSet<Theme>) =>
+// export const themesMenu = (...x: any) =>
+//   h("ul.menu.lg:menu-horizontal.rounded-box.lg:mb-64", [
+//     h("li", h("a", "Item 1")),
+//     h("li", [
+//       h("details", [
+//         h("summary", "x"),
+//         h("ul", [
+//           h("li", h("a", "Submenu 1")),
+//           h("li", h("a", "Submenu 2")),
+//           h("li", [
+//             h("details", [
+//               h("summary", "Parent"),
+//               h("ul", [h("li", h("a", "item 1")), h("li", h("a", "item 2"))]),
+//             ]),
+//           ]),
+//         ]),
+//       ]),
+//     ]),
+//     h("li", h("a", "Item 3")),
+//   ]);
+
+export const themesMenu = (...x: any) =>
   h(
-    "ul.menu xl:menu-horizontal bg-base-100 rounded-box lg:min-w-max space-y-6",
+    "ul.menu.lg:menu-horizontal.rounded-box.lg:mb-64",
     Object.entries(puzzleCategories).map(([categ, themes]) =>
-      h("a", [h("summary", categ), ul(themes.map((theme) => lia(theme)))]),
+      h("li", h("details", [h("summary", categ), h("ul", themes.map(lia))])),
     ),
   );
+
+// export const themesMenuKlass = (currentFilters: Set<Theme>) =>
+//   Object.entries(puzzleCategories).map(([categ, themes]) =>
+//     h("ul.menu bg-base-100 rounded-box lg:min-w-max", [
+//       h("span.menu-dropdown-toggle", categ),
+//       ul(themes.map((theme) => lia(theme))),
+//     ]),
+//   );
 // <ul class="menu lg:menu-horizontal rounded-box lg:mb-64">
 //   <li><a>Item 1</a></li>
 //   <li>
@@ -46,3 +74,8 @@ export const themesMenu = (currentFilters: OrderedSet<Theme>) =>
 //   </li>
 //   <li><a>Item 3</a></li>
 // </ul>
+
+// const detailsElement = h("details", { attrs: { open: true } }, [
+//   h("summary", "Summary Text"),
+//   h("p", "This is the content inside the details element."),
+// ]);

@@ -13,9 +13,6 @@ importers:
       daisyui:
         specifier: ^5.3.8
         version: 5.3.8
-      immutable:
-        specifier: ^5.1.4
-        version: 5.1.4
       snabbdom:
         specifier: ^3.5.1
         version: 3.6.3
@@ -747,12 +744,6 @@ packages:
       }
     engines: { node: ">= 4" }
 
-  immutable@5.1.4:
-    resolution:
-      {
-        integrity: sha512-p6u1bG3YSnINT5RQmx/yRZBpenIl30kVxkTLDyHLIMk0gict704Q9n+thfDI7lTRm9vXdDYutVzXhzcThxTnXA==,
-      }
-
   is-binary-path@2.1.0:
     resolution:
       {
@@ -1431,8 +1422,6 @@ snapshots:
   graceful-fs@4.2.11: {}
 
   ignore@5.3.2: {}
-
-  immutable@5.1.4: {}
 
   is-binary-path@2.1.0:
     dependencies:
