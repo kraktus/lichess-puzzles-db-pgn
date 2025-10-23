@@ -152,10 +152,7 @@ class Controller {
             floorPuzzleRating,
             ceilingPuzzleRating,
             this.ops.maxRating,
-            (e: any) => {
-              this.ops.maxRating = Number(e.target.value);
-              this.redraw();
-            },
+            this.simpleOptsUpdate("maxRating"),
           ),
           this.ops.minRating > this.ops.maxRating
             ? h(
@@ -183,7 +180,19 @@ class Controller {
             // <fieldset class="fieldset">
             // <input type="number" class="input" placeholder="Type here" />
             h("input.input.validator", {
-              attrs: { type: "number", min: 1 },
+              attrs: {
+                type: "number",
+                min: 1,
+                value: this.ops.maxPuzzles ?? "",
+              },
+              on: {
+                // no need to redraw here, already shown on the screen
+                input: (e: any) => {
+                  const val = Number((e.target as HTMLInputElement).value);
+                  if (val >= 1) this.ops.maxPuzzles = val;
+                  else this.ops.maxPuzzles = undefined;
+                },
+              },
             }),
           ]),
         ]),
@@ -245,12 +254,16 @@ class Controller {
   //   });
   // }
 
-  // private simpleConfigUpdate(key: keyOf ) {
-  //   return this.bind((e: any) => {
-  //     // @ts-ignore
-  //     this.config[key] = Number((e.target as HTMLInputElement).value);
-  //   });
-  // }
+  private simpleOptsUpdate(key: keyof PgnFilerSortExportOptions) {
+    return this.bind((e: any) => {
+      const target = (e.target as HTMLInputElement).value;
+      console.log("simple update with key and target", key, target);
+      // @ts-ignore
+      if (target) this.ops[key] = Number((e.target as HTMLInputElement).value);
+      // @ts-ignore
+      else this.ops[key] = undefined;
+    });
+  }
 }
 
 const container = document.getElementById("container")!;
