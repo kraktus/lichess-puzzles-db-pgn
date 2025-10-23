@@ -10,7 +10,7 @@ import {
   type VNode,
 } from "snabbdom";
 
-import { type Theme } from "./themes";
+import { type ThemeKey } from "./themes";
 import { section, themesMenu } from "./view";
 
 const patch = init([
@@ -30,7 +30,7 @@ const ceilingPuzzleRating = 4000; // TODO check that
 
 class PgnFilerSortExportOptions {
   // first level of sets for OR within a group, second set for AND between groups
-  themeFilters: Set<Theme>[];
+  themeFilters: Set<ThemeKey>[];
   minRating: number;
   maxRating: number;
   maxPuzzles?: number;

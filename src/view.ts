@@ -1,6 +1,6 @@
 import { h, type VNode, type VNodeChildren } from "snabbdom";
 
-import { puzzleCategories, type Theme } from "./themes";
+import { themeByCateg, type PuzzleTheme } from "./themes";
 
 export const section = (
   title: string,
@@ -13,7 +13,8 @@ export const section = (
     h("div.collapse-content.space-y-6", children),
   ]);
 
-const lia = (content: VNodeChildren): VNode => h("li", h("a", content));
+const lia = (theme: PuzzleTheme): VNode =>
+  h("li", h("a", { attrs: { title: theme.desc } }, theme.name));
 const ul = (content: VNodeChildren): VNode => h("ul.menu-dropdown", content);
 
 // export const themesMenu = (...x: any) =>
@@ -40,7 +41,7 @@ const ul = (content: VNodeChildren): VNode => h("ul.menu-dropdown", content);
 export const themesMenu = (...x: any) =>
   h(
     "ul.menu.lg:menu-horizontal.rounded-box.lg:mb-64",
-    Object.entries(puzzleCategories).map(([categ, themes]) =>
+    Object.entries(themeByCateg).map(([categ, themes]) =>
       h("li", h("details", [h("summary", categ), h("ul", themes.map(lia))])),
     ),
   );
