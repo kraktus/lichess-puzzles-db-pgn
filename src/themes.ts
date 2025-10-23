@@ -63,7 +63,7 @@ export type Theme =
   | "zugzwang"
   | "playerGames";
 
-const puzzleCategories: Record<string, Theme[]> = {
+export const puzzleCategories: Record<string, Theme[]> = {
   phases: [
     "opening",
     "middlegame",

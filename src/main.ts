@@ -9,9 +9,10 @@ import {
   h,
   type VNode,
 } from "snabbdom";
+import { OrderedSet } from "immutable";
 
 import { type Theme } from "./themes";
-import { section } from "./view";
+import { section, themesMenu } from "./view";
 
 const patch = init([
   // Init patch function with chosen modules
@@ -30,7 +31,7 @@ const ceilingPuzzleRating = 4000; // TODO check that
 
 class PgnFilerSortExportOptions {
   // first level of sets for OR within a group, second set for AND between groups
-  themeFilters: Set<Set<Theme>>;
+  themeFilters: OrderedSet<OrderedSet<Theme>>;
   minRating: number;
   maxRating: number;
   maxPuzzles?: number;
@@ -42,7 +43,7 @@ class PgnFilerSortExportOptions {
   includeComments: boolean;
 
   constructor() {
-    this.themeFilters = new Set();
+    this.themeFilters = OrderedSet();
     this.minRating = floorPuzzleRating;
     this.maxRating = ceilingPuzzleRating;
     this.includeTags = true;
@@ -170,21 +171,22 @@ class Controller {
               )
             : null,
           // Themes
-          h("div", [
-            h("label.label", h("span.label-text", "Theme")),
-            h("select.select.select-bordered.w-full", [
-              h(
-                "option",
-                { attrs: { disabled: true, selected: true } },
-                "Choose a theme",
-              ),
-              h("option", "Pin"),
-              h("option", "Fork"),
-              h("option", "Discovered Attack"),
-              h("option", "Endgame"),
-              h("option", "Opening Trap"),
-            ]),
-          ]),
+          // h("div", [
+          //   h("label.label", h("span.label-text", "Theme")),
+          //   h("select.select.select-bordered.w-full", [
+          //     h(
+          //       "option",
+          //       { attrs: { disabled: true, selected: true } },
+          //       "Choose a theme",
+          //     ),
+          //     h("option", "Pin"),
+          //     h("option", "Fork"),
+          //     h("option", "Discovered Attack"),
+          //     h("option", "Endgame"),
+          //     h("option", "Opening Trap"),
+          //   ]),
+          // ]),
+          themesMenu(OrderedSet()),
           // Max Puzzles
           h("div", [
             h("label.label", h("span.label-text", "Maximum Number of Puzzles")),
