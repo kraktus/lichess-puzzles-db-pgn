@@ -170,32 +170,21 @@ class Controller {
               )
             : null,
           // Themes
-          // h("div", [
-          //   h("label.label", h("span.label-text", "Theme")),
-          //   h("select.select.select-bordered.w-full", [
-          //     h(
-          //       "option",
-          //       { attrs: { disabled: true, selected: true } },
-          //       "Choose a theme",
-          //     ),
-          //     h("option", "Pin"),
-          //     h("option", "Fork"),
-          //     h("option", "Discovered Attack"),
-          //     h("option", "Endgame"),
-          //     h("option", "Opening Trap"),
-          //   ]),
-          // ]),
           h("span", themesMenu(new Set())),
           // Max Puzzles
           h("div", [
-            h("label.label", h("span.label-text", "Maximum Number of Puzzles")),
-            h("input.range.range-accent", {
-              attrs: { type: "range", min: 10, max: 5000, value: 1000 },
+            h(
+              "div",
+              h(
+                "label.label",
+                h("span.label-text", "Maximum Number of Puzzles"),
+              ),
+            ),
+            // <fieldset class="fieldset">
+            // <input type="number" class="input" placeholder="Type here" />
+            h("input.input.validator", {
+              attrs: { type: "number", min: 1 },
             }),
-            h("div.flex.justify-between.text-xs.opacity-70", [
-              h("span", "10"),
-              h("span", "5000"),
-            ]),
           ]),
         ]),
         ,
@@ -256,7 +245,7 @@ class Controller {
   //   });
   // }
 
-  // private simpleConfigUpdate(key: any) {
+  // private simpleConfigUpdate(key: keyOf ) {
   //   return this.bind((e: any) => {
   //     // @ts-ignore
   //     this.config[key] = Number((e.target as HTMLInputElement).value);
