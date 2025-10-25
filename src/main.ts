@@ -314,7 +314,7 @@ class Controller {
       const button = this.displayAlreadyFilteredThemes(themeFilter);
       const returnedNode = [makeModal(content, onClose, button)];
       if (i < includingWip.length - 1) {
-        returnedNode.push(h("span.font-bold.mx-2", "OR"));
+        returnedNode.push(h("div.divider", "OR"));
       }
       return returnedNode;
     });
