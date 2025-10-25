@@ -11,7 +11,7 @@ import {
 } from "snabbdom";
 
 import { capitalizeFirstLetter } from "./util";
-import { type ThemeKey } from "./themes";
+import { type ThemeKey, puzzleThemes } from "./themes";
 import { section, themesMenu } from "./view";
 import { ModalX } from "./modal";
 
@@ -173,6 +173,7 @@ class Controller {
           // Themes
           h("label.label", h("span.label-text", "Filter by themes")),
           ...this.selectThemeFilters(),
+          //this.testThemes(new Set(["mate", "mateIn1"])),
           // Max Puzzles
           h("div", [
             h(
@@ -244,12 +245,44 @@ class Controller {
     return this.ops.themeFilters.map((themeFilter: Set<ThemeKey>) => {
       // .bind(this) might not been needed but JS is such a pain I prefer to cover for it
       const content = themesMenu(themeFilter, this.redraw.bind(this));
-      const onClose = () =>
-        (this.ops.themeFilters = this.ops.themeFilters.filter(
+      const onClose = () => {
+        this.ops.themeFilters = this.ops.themeFilters.filter(
           (tf: Set<ThemeKey>) => tf.size > 0,
-        ));
-      return new ModalX(content, onClose).view();
+        );
+        this.redraw();
+      };
+      const button = this.testThemes(themeFilter);
+      return new ModalX(content, onClose, button).view();
     });
+  }
+
+  private testThemes(themes: Set<ThemeKey>): (openModal: () => void) => VNode {
+    return (openModal) =>
+      h(
+        "button.bg-base-200.rounded-box.p-10.w-full.flex.justify-start",
+        {
+          on: {
+            click: () => {
+              console.log("go open");
+              openModal();
+            },
+          },
+          class: {
+            "cursor-pointer": true,
+          },
+        },
+        [
+          ...Array.from(themes).flatMap((themeKey, i) => {
+            const badge = h(
+              "div.badge.badge-outline",
+              puzzleThemes[themeKey].name,
+            );
+            const andSeparator =
+              i < themes.size - 1 ? h("span.font-bold.mx-2", "AND") : null;
+            return [badge, andSeparator].filter(Boolean);
+          }),
+        ],
+      );
   }
 
   private bind(f: (e: any) => void) {

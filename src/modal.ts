@@ -2,19 +2,17 @@ import { h, type VNode, type VNodeChildren } from "snabbdom";
 
 // modal with an `X`/cross close button
 export class ModalX {
-  private modal?: HTMLDialogElement;
-
   private modalId: string;
   private content: VNode;
   private onClose?: () => void;
   // override button aspect by providing a function taking callback
   // to open the `modal` and returning a `VNode` for the custom button
-  private button?: (onClick: () => void) => VNode;
+  private button?: (openModal: () => void) => VNode;
 
   constructor(
     content: VNode,
     onClose?: () => void,
-    button?: (onClick: () => void) => VNode,
+    button?: (openModal: () => void) => VNode,
   ) {
     this.modalId = window.crypto.randomUUID();
     this.content = content;
@@ -23,16 +21,16 @@ export class ModalX {
   }
 
   view() {
-    const onClick = () => this.modal?.showModal();
+    const openModal = () => document.getElementById(this.modalId).showModal();
     return h("div", [
       // Open button
       this.button
-        ? this.button(onClick)
+        ? this.button(openModal)
         : h(
             "button.btn",
             {
               on: {
-                click: onClick,
+                click: openModal,
               },
             },
             "Open modal",
@@ -43,11 +41,6 @@ export class ModalX {
         "dialog.modal",
         {
           attrs: { id: this.modalId },
-          hook: {
-            insert: (vnode: any) => {
-              this.modal = vnode.elm as HTMLDialogElement;
-            },
-          },
         },
         [
           h("div.modal-box w-11/12 max-w-5xl h-[80vh]", [
@@ -58,9 +51,11 @@ export class ModalX {
                 attrs: { method: "dialog" },
                 // the actual closure of the modal is made by DaisyUI/html
                 // we only care about business logic here
-                on: {
-                  click: () => console.log("foo"),
-                },
+                on: this.onClose
+                  ? {
+                      click: this.onClose,
+                    }
+                  : {},
               },
               h(
                 "button.btn.btn-sm.btn-circle.btn-ghost.absolute.right-2.top-2",
