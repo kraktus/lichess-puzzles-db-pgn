@@ -14,6 +14,7 @@ export class ModalX {
     onClose?: () => void,
     button?: (openModal: () => void) => VNode,
   ) {
+    // could also be based on hash of content
     this.modalId = window.crypto.randomUUID();
     this.content = content;
     this.onClose = onClose;
@@ -21,6 +22,7 @@ export class ModalX {
   }
 
   view() {
+    // @ts-ignore
     const openModal = () => document.getElementById(this.modalId).showModal();
     return h("div", [
       // Open button

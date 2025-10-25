@@ -46,7 +46,20 @@ class PgnFilerSortExportOptions {
   includeComments: boolean;
 
   constructor() {
-    this.themeFilters = [new Set(["mate"])];
+    // DEBUG
+    this.themeFilters = [
+      new Set([
+        "opening",
+        "middlegame",
+        "endgame",
+        "rookEndgame",
+        "bishopEndgame",
+        "pawnEndgame",
+        "knightEndgame",
+        "queenEndgame",
+        "queenRookEndgame",
+      ]),
+    ];
     this.minRating = floorPuzzleRating;
     this.maxRating = ceilingPuzzleRating;
     this.includeTags = true;
@@ -251,15 +264,17 @@ class Controller {
         );
         this.redraw();
       };
-      const button = this.testThemes(themeFilter);
+      const button = this.displayAlreadyFilteredThemes(themeFilter);
       return new ModalX(content, onClose, button).view();
     });
   }
 
-  private testThemes(themes: Set<ThemeKey>): (openModal: () => void) => VNode {
+  private displayAlreadyFilteredThemes(
+    themes: Set<ThemeKey>,
+  ): (openModal: () => void) => VNode {
     return (openModal) =>
       h(
-        "button.bg-base-200.rounded-box.p-10.w-full.flex.justify-start",
+        "button.bg-base-200.rounded-box.p-10.w-full.flex.flex-wrap",
         {
           on: {
             click: () => {

@@ -2,9 +2,8 @@ export const capitalizeFirstLetter = (str: string) =>
   str.charAt(0).toUpperCase() + str.slice(1);
 
 export function ifAny<T>(l: T[], f: (t: T) => boolean): boolean {
-  for (const x in l) {
-    // FIXME
-    if (f(x as T)) {
+  for (const x of l) {
+    if (f(x)) {
       return true;
     }
   }
