@@ -13,7 +13,7 @@ import {
 import { capitalizeFirstLetter } from "./util";
 import { type ThemeKey, puzzleThemes } from "./themes";
 import { section, themesMenu } from "./view";
-import { ModalX } from "./modal";
+import { makeModal } from "./modal";
 
 const patch = init([
   // Init patch function with chosen modules
@@ -255,7 +255,7 @@ class Controller {
   }
 
   private selectThemeFilters(): VNode[] {
-    return this.ops.themeFilters.map((themeFilter: Set<ThemeKey>) => {
+    return this.ops.themeFilters.flatMap((themeFilter: Set<ThemeKey>, i) => {
       // .bind(this) might not been needed but JS is such a pain I prefer to cover for it
       const content = themesMenu(themeFilter, this.redraw.bind(this));
       const onClose = () => {
@@ -265,7 +265,7 @@ class Controller {
         this.redraw();
       };
       const button = this.displayAlreadyFilteredThemes(themeFilter);
-      return new ModalX(content, onClose, button).view();
+      return makeModal(content, onClose, button);
     });
   }
 
