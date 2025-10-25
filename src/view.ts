@@ -43,7 +43,7 @@ export const themesMenu = (
       ),
     );
   return h(
-    "ul.menu.lg:menu-horizontal.rounded-box.lg:mb-64",
+    "ul.menu lg:menu-horizontal rounded-box lg:mb-64",
     Object.entries(themeByCateg).map(([categ, themes]) =>
       h(
         "li",
