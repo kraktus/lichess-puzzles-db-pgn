@@ -1,4 +1,4 @@
-import { init, compress, decompress } from "@bokuweb/zstd-wasm";
+import { init, decompress } from "@bokuweb/zstd-wasm";
 import { Buffer } from "buffer";
 
 import { toBase64, toBlob } from "./util";
@@ -22,6 +22,8 @@ export class PuzzleCsv {
       );
     }
     this.db = this.openDb();
+    // DEBUG
+    this.db.then(() => this.decompressCsv());
   }
 
   openDb() {
@@ -90,12 +92,22 @@ export class PuzzleCsv {
     this.setLocalSorage("last-updated", this.lastUpdated.toISOString());
   }
 
-  // async decompressCsv(): Promise<Uint8Array | null> {
-  //   const zstedBase64 = await this.getIndexedDb("zstded");
-  //   if (!zstedBase64) throw new Error("No zstded CSV found in IndexedDB");
-  //   const zstedBlob = await toBlob(zstedBase64);
-  //   const zstedArrayBuffer = await zstedBlob.arrayBuffer();
-  // }
+  async decompressCsv(): Promise<string> {
+    console.log("retrieving zstded CSV from IndexedDB");
+    const zstedBase64 = await this.getIndexedDb("zstded");
+    if (!zstedBase64) throw new Error("No zstded CSV found in IndexedDB");
+    console.log("retrieved zstded CSV from IndexedDB");
+    console.log("converting back zstded CSV to Blob");
+    const zstedBlob = await toBlob(zstedBase64);
+    console.log("converted back zstded CSV to Blob");
+    const zstedArrayBuffer = await zstedBlob.arrayBuffer();
+    const zstdedBuffer = Buffer.from(zstedArrayBuffer);
+    console.log("decompressing CSV");
+    const res = decompress(zstdedBuffer);
+    const resStr = Buffer.from(res).toString();
+    console.log("decompressed CSV", resStr.slice(0, 200) + "...");
+    return resStr;
+  }
 
   private async getIndexedDb(key: string): Promise<string | null> {
     const db = await this.db;
