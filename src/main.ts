@@ -10,8 +10,9 @@ import {
   type VNode,
 } from "snabbdom";
 
+import { capitalizeFirstLetter } from "./util";
 import { type ThemeKey } from "./themes";
-import { section, themesMenu } from "./view";
+import { section, themesMenu, ModalX } from "./view";
 
 const patch = init([
   // Init patch function with chosen modules
@@ -28,6 +29,8 @@ console.log(VERSION);
 const floorPuzzleRating = 400;
 const ceilingPuzzleRating = 4000; // TODO check that
 
+type SortBy = "rating" | "popularity";
+
 class PgnFilerSortExportOptions {
   // first level of sets for OR within a group, second set for AND between groups
   themeFilters: Set<ThemeKey>[];
@@ -36,7 +39,7 @@ class PgnFilerSortExportOptions {
   maxPuzzles?: number;
 
   // if nothing set, unordered, in the order of retrieval
-  sortBy?: "rating" | "popularity";
+  sortBy?: SortBy;
 
   includeTags: boolean;
   includeComments: boolean;
@@ -167,7 +170,8 @@ class Controller {
               )
             : null,
           // Themes
-          h("span", themesMenu(new Set())),
+          h("span"),
+          new ModalX(themesMenu(new Set(), this.redraw.bind(this))).view(),
           // Max Puzzles
           h("div", [
             h(
@@ -199,15 +203,13 @@ class Controller {
         ,
         // Sort Section
         section("Sort by", this.dropdowns.sortBy, [
-          h("label.cursor-pointer.flex.items-center.gap-2", [
-            h("input.radio.radio-primary", {
-              attrs: { type: "radio", name: "sort" },
-            }),
-            h("span", "Rating"),
-          ]),
+          this.radioSort("rating", "primary"),
           h("label.cursor-pointer.flex.items-center.gap-2", [
             h("input.radio.radio-secondary", {
               attrs: { type: "radio", name: "sort" },
+              on: {
+                change: this.setSort("popularity"),
+              },
             }),
             h("span", "Popularity"),
           ]),
@@ -245,14 +247,20 @@ class Controller {
     };
   }
 
-  // private simpleSimulUpdate(key: string) {
-  //   return this.bind((e: any) => {
-  //     // @ts-ignore
-  //     this.config.simulation[key] = Number(
-  //       (e.target as HTMLInputElement).value,
-  //     );
-  //   });
-  // }
+  private radioSort = (key: SortBy, color: string) =>
+    h("label.cursor-pointer.flex.items-center.gap-2", [
+      // FIXME it's discouraged to dynamically create class due to tailwind class purging that may remove it
+      // I think for DaisyUI it's fine though
+      h(`input.radio.radio-${color}`, {
+        attrs: { type: "radio", name: "sort" },
+        on: {
+          change: this.setSort(key),
+        },
+      }),
+      h("span", capitalizeFirstLetter(key)),
+    ]);
+
+  private setSort = (key: SortBy) => () => (this.ops.sortBy = key);
 
   private simpleOptsUpdate(key: keyof PgnFilerSortExportOptions) {
     return this.bind((e: any) => {
