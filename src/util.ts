@@ -15,3 +15,21 @@ export function ifAny<T>(l: T[], f: (t: T) => boolean): boolean {
 export function toggleElm<T>(s: Set<T>, elm: T) {
   s.has(elm) ? s.delete(elm) : s.add(elm);
 }
+
+export const toBase64 = (file: Blob): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === "string") {
+        resolve(result.split(",")[1]); // Get only the base64 part
+      } else {
+        reject(new Error("Failed to read file as base64 string."));
+      }
+    };
+    reader.onerror = () => {
+      reject(new Error("Error reading file."));
+    };
+    reader.readAsDataURL(file);
+  });
+};
