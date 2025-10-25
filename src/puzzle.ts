@@ -73,6 +73,7 @@ export class PuzzleCsv {
     const licsv = await fetch(
       // CORS issue
       //"https://database.lichess.org/lichess_db_puzzle.csv.zst",
+      // DEBUG
       "https://raw.githubusercontent.com/kraktus/lichess-puzzles-db-pgn-data/refs/heads/master/lichess_db_puzzle-light.csv.zst",
     );
     if (!licsv.ok) {
