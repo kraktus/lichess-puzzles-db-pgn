@@ -148,7 +148,7 @@ class Controller {
             "div.flex.justify-center", // parent with flex and horizontal centering
             [
               h(
-                "button.btn.btn-accent.p-4",
+                "button.btn btn-accent p-4",
                 {
                   on: {
                     click: () => {
