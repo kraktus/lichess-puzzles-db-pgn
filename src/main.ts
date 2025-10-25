@@ -123,6 +123,7 @@ const rangeInput = (
 class Controller {
   ops: PgnFilerSortExportOptions;
   dropdowns: DropdownsState;
+  wipFilter: Set<ThemeKey>;
 
   old: HTMLElement | VNode;
 
@@ -133,6 +134,8 @@ class Controller {
       sortBy: true,
       exportOptions: true,
     };
+    // the empty set allows to have an "add new filter" button
+    this.wipFilter = new Set();
 
     this.old = elem;
   }
@@ -173,7 +176,7 @@ class Controller {
           ),
           this.ops.minRating > this.ops.maxRating
             ? h(
-                "div.alert.alert-error.alert-soft",
+                "div.alert alert-error alert-soft",
                 {
                   attrs: { role: "alert" },
                 },
@@ -255,21 +258,24 @@ class Controller {
   }
 
   private selectThemeFilters(): VNode[] {
-    // the empty set at the end allows to always have an "add new filter" button
-    const newFilter: Set<ThemeKey> = new Set();
-    const includingNewFilter = [...this.ops.themeFilters, newFilter];
-    return includingNewFilter.flatMap((themeFilter: Set<ThemeKey>, i) => {
+    const includingWip = [...this.ops.themeFilters, this.wipFilter];
+    return includingWip.flatMap((themeFilter: Set<ThemeKey>, i) => {
       // .bind(this) might not been needed but JS is such a pain I prefer to cover for it
       const content = themesMenu(themeFilter, this.redraw.bind(this));
       const onClose = () => {
-        this.ops.themeFilters = includingNewFilter.filter(
+        this.ops.themeFilters = includingWip.filter(
           (tf: Set<ThemeKey>) => tf.size > 0,
         );
+        // if it's not empty, it has been added to the `ops.themeFilters`
+        // and we need to create a new empty one, to show the "+ add filter" button
+        if (this.wipFilter.size > 0) {
+          this.wipFilter = new Set();
+        }
         this.redraw();
       };
       const button = this.displayAlreadyFilteredThemes(themeFilter);
       const returnedNode = [makeModal(content, onClose, button)];
-      if (i < includingNewFilter.length - 1) {
+      if (i < includingWip.length - 1) {
         returnedNode.push(h("span.font-bold.mx-2", "OR"));
       }
       return returnedNode;
@@ -302,7 +308,7 @@ class Controller {
             })
           : h(
               "div.badge.badge-dash badge-primary w-full p-4",
-              "+ Add new themes",
+              "+ filter new themes",
             ),
       );
   }
