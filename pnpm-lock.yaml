@@ -7,6 +7,9 @@ settings:
 importers:
   .:
     dependencies:
+      "@bokuweb/zstd-wasm":
+        specifier: ^0.0.27
+        version: 0.0.27
       "@tailwindcss/vite":
         specifier: ^4.1.15
         version: 4.1.15(vite@7.1.11(jiti@2.6.1)(lightningcss@1.30.2))
@@ -54,6 +57,12 @@ packages:
     resolution:
       {
         integrity: sha512-w/63nURdkRPpg3AXbNr7lPv6HgOuVDyefTumiXsbXxtIwcuk5EXayWR5OpSwDjsQPgaYsfUSedMduaNOjAYY8A==,
+      }
+
+  "@bokuweb/zstd-wasm@0.0.27":
+    resolution:
+      {
+        integrity: sha512-GDm2uOTK3ESjnYmSeLQifJnBsRCWajKLvN32D2ZcQaaCIJI/Hse9s74f7APXjHit95S10UImsRGkTsbwHmrtmg==,
       }
 
   "@esbuild/aix-ppc64@0.25.11":
@@ -1119,6 +1128,8 @@ snapshots:
   "@blakeembrey/deque@1.0.5": {}
 
   "@blakeembrey/template@1.2.0": {}
+
+  "@bokuweb/zstd-wasm@0.0.27": {}
 
   "@esbuild/aix-ppc64@0.25.11":
     optional: true
