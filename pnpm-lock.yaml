@@ -10,6 +10,9 @@ importers:
       "@tailwindcss/vite":
         specifier: ^4.1.15
         version: 4.1.15(vite@7.1.11(jiti@2.6.1)(lightningcss@1.30.2))
+      chessops:
+        specifier: ^0.15.0
+        version: 0.15.0
       daisyui:
         specifier: ^5.3.8
         version: 5.3.8
@@ -34,6 +37,13 @@ importers:
         version: 7.1.11(jiti@2.6.1)(lightningcss@1.30.2)
 
 packages:
+  "@badrap/result@0.3.1":
+    resolution:
+      {
+        integrity: sha512-ECvpsyZYknoRD0peG1K+UkX5llld3TyK1Ot9Cq2epSoWK19nyzpGKVl98sadSmohu5wHNuiDl+Ex9SVdcIjiFg==,
+      }
+    engines: { node: ">= 22" }
+
   "@blakeembrey/deque@1.0.5":
     resolution:
       {
@@ -655,6 +665,12 @@ packages:
       }
     engines: { node: ">=8" }
 
+  chessops@0.15.0:
+    resolution:
+      {
+        integrity: sha512-4Ps0O8/UO09tDGbze1mMilUSMZjVYMFtQvrhlCQV385cO0BgdUPUZsq/r1Qrf6UQ4J0i7XcMbRRvFRKu+Ith1w==,
+      }
+
   chokidar@3.6.0:
     resolution:
       {
@@ -1098,6 +1114,8 @@ packages:
     hasBin: true
 
 snapshots:
+  "@badrap/result@0.3.1": {}
+
   "@blakeembrey/deque@1.0.5": {}
 
   "@blakeembrey/template@1.2.0": {}
@@ -1347,6 +1365,10 @@ snapshots:
   braces@3.0.3:
     dependencies:
       fill-range: 7.1.1
+
+  chessops@0.15.0:
+    dependencies:
+      "@badrap/result": 0.3.1
 
   chokidar@3.6.0:
     dependencies:

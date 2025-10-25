@@ -73,20 +73,52 @@ interface DropdownsState {
   exportOptions: boolean;
 }
 
-const footer = h("div.dropup", [
-  h("button.dropbtn", "v: latest"),
-  h("div.dropup-content", [
-    h(
-      "a",
-      {
-        attrs: {
-          href: "/li-network/v0-1.html",
+// const footer = h("a", VERSION);
+const footer = h(
+  "footer.daisy-footer p-4 bg-neutral text-neutral-content flex flex-col md:flex-row items-center justify-between",
+  [
+    h("div.flex items-center space-x-4", [
+      h(
+        "a",
+        {
+          props: {
+            href: "https://github.com/kraktus/lichess-puzzles-db-pgn",
+            target: "_blank",
+          },
+          class: { link: true, "link-hover": true },
         },
-      },
-      VERSION,
-    ),
-  ]),
-]);
+        "GitHub",
+      ),
+      h(
+        "a",
+        {
+          props: {
+            href: "https://opensource.org/licenses/AGPL",
+            target: "_blank",
+            rel: "noopener noreferrer",
+          },
+          class: { link: true, "link-hover": true },
+        },
+        "AGPL",
+      ),
+    ]),
+    h("span.mt-2.md:mt-0", [
+      "Author: ",
+      h(
+        "a",
+        {
+          props: {
+            href: "https://github.com/kraktus",
+            target: "_blank",
+            rel: "noopener noreferrer",
+          },
+          class: { link: true, "link-hover": true },
+        },
+        "kraktus",
+      ),
+    ]),
+  ],
+);
 const rangeInput = (
   title: string,
   color: string,
@@ -129,6 +161,7 @@ class Controller {
 
   constructor(elem: HTMLElement) {
     this.ops = new PgnFilerSortExportOptions();
+    // DEBUG to true
     this.dropdowns = {
       filter: true,
       sortBy: true,
@@ -162,10 +195,11 @@ class Controller {
                 {
                   on: {
                     click: () => {
-                      for (const key of Object.keys(this.dropdowns)) {
-                        // @ts-ignore
-                        this.dropdowns[key] = true;
-                      }
+                      this.dropdowns = {
+                        filter: true,
+                        sortBy: true,
+                        exportOptions: true,
+                      };
                       this.redraw();
                     },
                   },
@@ -216,7 +250,6 @@ class Controller {
           // Themes
           h("label.label", h("span.label-text", "Filter by themes")),
           ...this.selectThemeFilters(),
-          //this.testThemes(new Set(["mate", "mateIn1"])),
           // Max Puzzles
           h("div", [
             h(
