@@ -142,11 +142,38 @@ class Controller {
   redraw() {
     this.old = patch(this.old, this.view());
   }
+
+  private allDropdownsExpanded() {
+    for (const d of Object.values(this.dropdowns)) {
+      if (!d) return false;
+    }
+    return true;
+  }
   view(): VNode {
     return h("div.max-w-4xl.mx-auto.py-10.px-4", [
       h("h1.text-2xl.mb-8.text-center", "Lichess Puzzles to PGN"),
       // Collapsible Sections
       h("div.space-y-4", [
+        !this.allDropdownsExpanded()
+          ? h(
+              "div.flex.justify-end",
+              h(
+                "button.text-sm underline",
+                {
+                  on: {
+                    click: () => {
+                      for (const key of Object.keys(this.dropdowns)) {
+                        // @ts-ignore
+                        this.dropdowns[key] = true;
+                      }
+                      this.redraw();
+                    },
+                  },
+                },
+                "Expand all",
+              ),
+            )
+          : null,
         // Filter Section
         section("Filter", this.dropdowns.filter, [
           // Min Rating
@@ -254,6 +281,7 @@ class Controller {
       h("div.text-center.mt-8", [
         h("button.btn.btn-primary.btn-wide", "Generate PGN"),
       ]),
+      footer,
     ]);
   }
 
