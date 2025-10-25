@@ -69,7 +69,9 @@ export class PuzzleCsv {
   async download() {
     console.log("starting download of lichess puzzles CSV");
     const licsv = await fetch(
-      "https://database.lichess.org/lichess_db_puzzle.csv.zst",
+      // CORS issue
+      //"https://database.lichess.org/lichess_db_puzzle.csv.zst",
+      "https://raw.githubusercontent.com/kraktus/lichess-puzzles-db-pgn-data/refs/heads/master/lichess_db_puzzle-light.csv.zst",
     );
     if (!licsv.ok) {
       throw new Error(
