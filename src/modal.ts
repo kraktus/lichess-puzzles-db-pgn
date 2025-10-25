@@ -48,7 +48,7 @@ export function makeModal(
                 : {},
             },
             h(
-              "button.btn.btn-sm.btn-circle.btn-ghost.absolute.right-2.top-2",
+              "button.btn btn-sm btn-circle btn-ghost absolute right-2 top-2",
               "✕",
             ),
           ),
