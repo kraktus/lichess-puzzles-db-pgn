@@ -25,7 +25,11 @@ export const themesMenu = (
       h(
         `a`,
         {
-          class: { "menu-active": filtered.has(theme.key) },
+          class: {
+            "menu-active": filtered.has(theme.key),
+            // by default `menu-active` disable cursor pointer
+            "cursor-pointer": true,
+          },
           attrs: { title: theme.desc },
           on: {
             click: () => {

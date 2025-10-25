@@ -6,24 +6,37 @@ export class ModalX {
 
   private modalId: string;
   private content: VNode;
+  private onClose?: () => void;
+  // override button aspect by providing a function taking callback
+  // to open the `modal` and returning a `VNode` for the custom button
+  private button?: (onClick: () => void) => VNode;
 
-  constructor(content: VNode) {
+  constructor(
+    content: VNode,
+    onClose?: () => void,
+    button?: (onClick: () => void) => VNode,
+  ) {
     this.modalId = window.crypto.randomUUID();
     this.content = content;
+    this.onClose = onClose;
+    this.button = button;
   }
 
   view() {
+    const onClick = () => this.modal?.showModal();
     return h("div", [
       // Open button
-      h(
-        "button.btn",
-        {
-          on: {
-            click: () => this.modal?.showModal(),
-          },
-        },
-        "Open modal",
-      ),
+      this.button
+        ? this.button(onClick)
+        : h(
+            "button.btn",
+            {
+              on: {
+                click: onClick,
+              },
+            },
+            "Open modal",
+          ),
 
       // The modal itself
       h(

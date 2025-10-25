@@ -46,7 +46,7 @@ class PgnFilerSortExportOptions {
   includeComments: boolean;
 
   constructor() {
-    this.themeFilters = [];
+    this.themeFilters = [new Set(["mate"])];
     this.minRating = floorPuzzleRating;
     this.maxRating = ceilingPuzzleRating;
     this.includeTags = true;
@@ -172,7 +172,7 @@ class Controller {
             : null,
           // Themes
           h("label.label", h("span.label-text", "Filter by themes")),
-          new ModalX(themesMenu(new Set(), this.redraw.bind(this))).view(),
+          ...this.selectThemeFilters(),
           // Max Puzzles
           h("div", [
             h(
@@ -238,6 +238,18 @@ class Controller {
         h("button.btn.btn-primary.btn-wide", "Generate PGN"),
       ]),
     ]);
+  }
+
+  private selectThemeFilters(): VNode[] {
+    return this.ops.themeFilters.map((themeFilter: Set<ThemeKey>) => {
+      // .bind(this) might not been needed but JS is such a pain I prefer to cover for it
+      const content = themesMenu(themeFilter, this.redraw.bind(this));
+      const onClose = () =>
+        (this.ops.themeFilters = this.ops.themeFilters.filter(
+          (tf: Set<ThemeKey>) => tf.size > 0,
+        ));
+      return new ModalX(content, onClose).view();
+    });
   }
 
   private bind(f: (e: any) => void) {
