@@ -12,7 +12,8 @@ import {
 
 import { capitalizeFirstLetter } from "./util";
 import { type ThemeKey } from "./themes";
-import { section, themesMenu, ModalX } from "./view";
+import { section, themesMenu } from "./view";
+import { ModalX } from "./modal";
 
 const patch = init([
   // Init patch function with chosen modules
@@ -170,7 +171,7 @@ class Controller {
               )
             : null,
           // Themes
-          h("span"),
+          h("label.label", h("span.label-text", "Filter by themes")),
           new ModalX(themesMenu(new Set(), this.redraw.bind(this))).view(),
           // Max Puzzles
           h("div", [

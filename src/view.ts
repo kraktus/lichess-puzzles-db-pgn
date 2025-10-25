@@ -3,62 +3,6 @@ import { h, type VNode, type VNodeChildren } from "snabbdom";
 import { themeByCateg, type PuzzleTheme, type ThemeKey } from "./themes";
 import { ifAny, toggleElm } from "./util";
 
-// modal with an `X`/cross close button
-// also closes by clicking outside
-export class ModalX {
-  private modal?: HTMLDialogElement;
-
-  private modalId: string;
-  private content: VNode;
-
-  constructor(content: VNode) {
-    this.modalId = window.crypto.randomUUID();
-    this.content = content;
-  }
-
-  view() {
-    return h("div", [
-      // Open button
-      h(
-        "button.btn",
-        {
-          on: {
-            click: () => this.modal?.showModal(),
-          },
-        },
-        "Open modal",
-      ),
-
-      // The modal itself
-      h(
-        "dialog.modal",
-        {
-          attrs: { id: this.modalId },
-          hook: {
-            insert: (vnode: any) => {
-              this.modal = vnode.elm as HTMLDialogElement;
-            },
-          },
-        },
-        [
-          h("div.modal-box w-11/12 max-w-5xl h-[80vh]", [
-            // ✕ close button (top right)
-            h(
-              "form",
-              { attrs: { method: "dialog" } },
-              h(
-                "button.btn.btn-sm.btn-circle.btn-ghost.absolute.right-2.top-2",
-                "✕",
-              ),
-            ),
-            this.content,
-          ]),
-        ],
-      ),
-    ]);
-  }
-}
-
 export const section = (
   title: string,
   opened: boolean,
