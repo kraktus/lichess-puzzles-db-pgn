@@ -255,17 +255,24 @@ class Controller {
   }
 
   private selectThemeFilters(): VNode[] {
-    return this.ops.themeFilters.flatMap((themeFilter: Set<ThemeKey>, i) => {
+    // the empty set at the end allows to always have an "add new filter" button
+    const newFilter: Set<ThemeKey> = new Set();
+    const includingNewFilter = [...this.ops.themeFilters, newFilter];
+    return includingNewFilter.flatMap((themeFilter: Set<ThemeKey>, i) => {
       // .bind(this) might not been needed but JS is such a pain I prefer to cover for it
       const content = themesMenu(themeFilter, this.redraw.bind(this));
       const onClose = () => {
-        this.ops.themeFilters = this.ops.themeFilters.filter(
+        this.ops.themeFilters = includingNewFilter.filter(
           (tf: Set<ThemeKey>) => tf.size > 0,
         );
         this.redraw();
       };
       const button = this.displayAlreadyFilteredThemes(themeFilter);
-      return makeModal(content, onClose, button);
+      const returnedNode = [makeModal(content, onClose, button)];
+      if (i < includingNewFilter.length - 1) {
+        returnedNode.push(h("span.font-bold.mx-2", "OR"));
+      }
+      return returnedNode;
     });
   }
 
@@ -277,26 +284,26 @@ class Controller {
         "button.bg-base-200.rounded-box.p-10.w-full.flex.flex-wrap",
         {
           on: {
-            click: () => {
-              console.log("go open");
-              openModal();
-            },
+            click: openModal,
           },
           class: {
             "cursor-pointer": true,
           },
         },
-        [
-          ...Array.from(themes).flatMap((themeKey, i) => {
-            const badge = h(
-              "div.badge.badge-outline",
-              puzzleThemes[themeKey].name,
-            );
-            const andSeparator =
-              i < themes.size - 1 ? h("span.font-bold.mx-2", "AND") : null;
-            return [badge, andSeparator].filter(Boolean);
-          }),
-        ],
+        themes.size > 0
+          ? Array.from(themes).flatMap((themeKey, i) => {
+              const badge = [
+                h("div.badge.badge-outline", puzzleThemes[themeKey].name),
+              ];
+              if (i < themes.size - 1) {
+                badge.push(h("span.font-bold.mx-2", "AND"));
+              }
+              return badge;
+            })
+          : h(
+              "div.badge.badge-dash badge-primary w-full p-4",
+              "+ Add new themes",
+            ),
       );
   }
 
