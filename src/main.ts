@@ -14,6 +14,7 @@ import { capitalizeFirstLetter } from "./util";
 import { type ThemeKey, puzzleThemes } from "./themes";
 import { section, themesMenu, footer } from "./view";
 import { makeModal } from "./modal";
+import { PuzzleCsv } from "./puzzle";
 
 const patch = init([
   // Init patch function with chosen modules
@@ -108,6 +109,7 @@ const rangeInput = (
 
 class Controller {
   ops: PgnFilerSortExportOptions;
+  puzzleCsv: PuzzleCsv;
   dropdowns: DropdownsState;
   wipFilter: Set<ThemeKey>;
 
@@ -115,10 +117,11 @@ class Controller {
 
   constructor(elem: HTMLElement) {
     this.ops = new PgnFilerSortExportOptions();
+    this.puzzleCsv = new PuzzleCsv();
     // DEBUG to true
     this.dropdowns = {
       filter: true,
-      sortBy: true,
+      sortBy: false,
       exportOptions: true,
     };
     // the empty set allows to have an "add new filter" button
@@ -139,6 +142,26 @@ class Controller {
   view(): VNode {
     return h("div.max-w-4xl.mx-auto.py-10.px-4", [
       h("h1.text-2xl.mb-8.text-center", "Lichess Puzzles to PGN"),
+
+      this.puzzleCsv.downloadNeeded()
+        ? h(
+            "div.flex.justify-center", // parent with flex and horizontal centering
+            [
+              h(
+                "button.btn.btn-accent.p-4",
+                {
+                  on: {
+                    click: () => {
+                      this.puzzleCsv.download().then(() => this.redraw());
+                      this.redraw();
+                    },
+                  },
+                },
+                "start downloading the puzzle database",
+              ),
+            ],
+          )
+        : null,
       // Collapsible Sections
       h("div.space-y-4", [
         !this.allDropdownsExpanded()

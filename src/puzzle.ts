@@ -1,13 +1,26 @@
+import { init, compress, decompress } from "@bokuweb/zstd-wasm";
+import { Buffer } from "buffer";
+
+import { toBase64, toBlob } from "./util";
+
 const prefix = "lipuzzles-csv";
 const objectStore = "db";
 
 export class PuzzleCsv {
   lastUpdated?: Date;
+  // whether download is in progress or not
+  private dlWip: boolean = false;
   private db: Promise<IDBDatabase>;
 
   constructor() {
-    const retrieved = this.getItem("last-updated");
+    init();
+    const retrieved = this.getLocalStorage("last-updated");
     this.lastUpdated = retrieved ? new Date(retrieved) : undefined;
+    if (this.lastUpdated) {
+      console.log(
+        `Puzzle CSV last retrieved: ${this.lastUpdated.toISOString()}`,
+      );
+    }
     this.db = this.openDb();
   }
 
@@ -30,6 +43,7 @@ export class PuzzleCsv {
         alert(blocked);
       };
       openReq.onsuccess = function () {
+        console.log("IndexedDB opened successfully");
         let db = openReq.result;
 
         db.onversionchange = function () {
@@ -43,15 +57,17 @@ export class PuzzleCsv {
     });
   }
 
-  csvIsRecent() {
-    if (!this.lastUpdated) return false;
+  downloadNeeded() {
+    if (this.dlWip) return false;
+    if (!this.lastUpdated) return true;
     const now = new Date();
     const diff = now.getTime() - this.lastUpdated.getTime();
     const oneWeek = 7 * 24 * 60 * 60 * 1000;
-    return diff < oneWeek;
+    return diff > oneWeek;
   }
 
   async download() {
+    console.log("starting download of lichess puzzles CSV");
     const licsv = await fetch(
       "https://database.lichess.org/lichess_db_puzzle.csv.zst",
     );
@@ -60,16 +76,60 @@ export class PuzzleCsv {
         `Failed to download lichess puzzles CSV: ${licsv.status} ${licsv.statusText}`,
       );
     }
+    console.log("downloaded lichess puzzles CSV");
     const zstded = await licsv.blob();
-    //this.setItem("data-zstd", zstded);
+    console.log("converting zstded CSV to Base64");
+    const zstdBase64 = await toBase64(zstded);
+    console.log("converted zstded CSV to Base64");
+    console.log("storing zstded CSV to IndexedDB");
+    await this.setIndexedDb("zstded", zstdBase64);
+    console.log("stored zstded CSV to IndexedDB");
     this.lastUpdated = new Date();
-    this.setItem("last-updated", this.lastUpdated.toISOString());
+    this.setLocalSorage("last-updated", this.lastUpdated.toISOString());
   }
 
-  private getItem(key: string): string | null {
+  // async decompressCsv(): Promise<Uint8Array | null> {
+  //   const zstedBase64 = await this.getIndexedDb("zstded");
+  //   if (!zstedBase64) throw new Error("No zstded CSV found in IndexedDB");
+  //   const zstedBlob = await toBlob(zstedBase64);
+  //   const zstedArrayBuffer = await zstedBlob.arrayBuffer();
+  // }
+
+  private async getIndexedDb(key: string): Promise<string | null> {
+    const db = await this.db;
+    const tx = db.transaction(objectStore, "readonly");
+    const store = tx.objectStore(objectStore);
+    const req = store.get(key);
+    return new Promise<string | null>((resolve, reject) => {
+      req.onsuccess = () => {
+        if (req.result) {
+          resolve(req.result.data);
+        } else {
+          resolve(null);
+        }
+      };
+      req.onerror = (event: any) =>
+        reject(new Error(`Failed to get IndexedDB item: ${event}`));
+    });
+  }
+
+  private getLocalStorage(key: string): string | null {
     return window.localStorage.getItem(`${prefix}-${key}`);
   }
-  private setItem(key: string, value: string) {
+
+  private async setIndexedDb(key: string, value: string): Promise<void> {
+    const db = await this.db;
+    const tx = db.transaction(objectStore, "readwrite");
+    const store = tx.objectStore(objectStore);
+    const req = store.put({ id: key, data: value });
+    return new Promise<void>((resolve, reject) => {
+      req.onsuccess = () => resolve();
+      req.onerror = (event: any) =>
+        reject(new Error(`Failed to set IndexedDB item: ${event}`));
+    });
+  }
+
+  private setLocalSorage(key: string, value: string) {
     window.localStorage.setItem(`${prefix}-${key}`, value);
   }
 }
