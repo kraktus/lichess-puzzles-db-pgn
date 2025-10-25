@@ -16,7 +16,7 @@ export function toggleElm<T>(s: Set<T>, elm: T) {
   s.has(elm) ? s.delete(elm) : s.add(elm);
 }
 
-export const toBase64 = (file: Blob): Promise<string> => {
+export async function toBase64(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -32,4 +32,12 @@ export const toBase64 = (file: Blob): Promise<string> => {
     };
     reader.readAsDataURL(file);
   });
-};
+}
+
+export async function toBlob(
+  base64: string,
+  mimeType: string = "application/octet-stream",
+): Promise<Blob> {
+  const response = await fetch(`data:${mimeType};base64,${base64}`);
+  return await response.blob();
+}

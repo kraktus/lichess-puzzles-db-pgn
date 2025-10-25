@@ -10,10 +10,14 @@
     "format": "onchange \"**/*\" -- prettier --write --log-level warn --ignore-unknown {{changed}}"
   },
   "devDependencies": {
+    "@vitest/browser": "^4.0.3",
+    "@vitest/browser-playwright": "^4.0.3",
     "onchange": "^7.1.0",
+    "playwright": "^1.56.1",
     "prettier": "^3.6.2",
     "typescript": "~5.9.3",
-    "vite": "^7.1.7"
+    "vite": "^7.1.7",
+    "vitest": "^4.0.3"
   },
   "dependencies": {
     "@bokuweb/zstd-wasm": "^0.0.27",
