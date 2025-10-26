@@ -1,6 +1,9 @@
 const prefix = "lipuzzles-csv";
 const objectStore = "db";
 
+// TODO, switch to `idb` package?
+type IDbValue = Blob | string | ArrayBuffer | Uint8Array | string[];
+
 export class Db {
   private inner: IDBDatabase;
 
@@ -41,7 +44,7 @@ export class Db {
     });
   }
 
-  private async getIndexedDb(key: string): Promise<string | null> {
+  async getIndexedDb(key: string): Promise<string | null> {
     const tx = this.inner.transaction(objectStore, "readonly");
     const store = tx.objectStore(objectStore);
     const req = store.get(key);
@@ -58,12 +61,13 @@ export class Db {
     });
   }
 
-  private getLocalStorage(key: string): string | null {
+  getLocalStorage(key: string): string | null {
     console.log(`Getting from localStorage: ${key}`);
     return window.localStorage.getItem(`${prefix}-${key}`);
   }
 
-  private async setIndexedDb(key: string, value: string): Promise<void> {
+  // ArrayBuffer, Blob, File, and typed arrays like Uint8Array
+  async setIndexedDb(key: string, value: IDbValue): Promise<void> {
     const tx = this.inner.transaction(objectStore, "readwrite");
     const store = tx.objectStore(objectStore);
     const req = store.put({ id: key, data: value });
@@ -77,7 +81,7 @@ export class Db {
     });
   }
 
-  private setLocalSorage(key: string, value: string) {
+  setLocalSorage(key: string, value: string) {
     console.log(`Setting to localStorage: ${key}, ${value}`);
     window.localStorage.setItem(`${prefix}-${key}`, value);
   }
