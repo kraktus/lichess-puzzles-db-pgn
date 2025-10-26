@@ -70,6 +70,7 @@ export class PuzzleCsv {
 
   async download() {
     console.log("starting download of lichess puzzles CSV");
+    this.dlWip = true;
     const licsv = await fetch(
       // CORS issue
       //"https://database.lichess.org/lichess_db_puzzle.csv.zst",
@@ -91,6 +92,7 @@ export class PuzzleCsv {
     console.log("stored zstded CSV to IndexedDB");
     this.lastUpdated = new Date();
     this.setLocalSorage("last-updated", this.lastUpdated.toISOString());
+    this.dlWip = false;
   }
 
   async decompressCsv(): Promise<string> {

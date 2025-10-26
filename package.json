@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@bokuweb/zstd-wasm": "^0.0.27",
+    "@huggingface/hub": "^2.6.12",
     "@tailwindcss/vite": "^4.1.15",
     "buffer": "^6.0.3",
     "chessops": "^0.15.0",
