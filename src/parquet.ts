@@ -1,7 +1,7 @@
 import { Db } from "./db";
 import { listFiles, downloadFile } from "@huggingface/hub";
 
-const REPO_ID = "Lichess/chess-puzzles";
+const REPO_ID = "datasets/Lichess/chess-puzzles";
 const REVISION = "main";
 
 // the IDb key where the list of parquet files paths are stored
@@ -10,6 +10,7 @@ const LIST_PARQUET_PATHS_KEY = "parquetPaths";
 
 async function listParquetFilePaths(): Promise<string[]> {
   const parquetFiles: string[] = [];
+  console.log("Listing parquet files...");
   for await (const fileInfo of listFiles({
     repo: REPO_ID,
     revision: REVISION,
@@ -20,6 +21,7 @@ async function listParquetFilePaths(): Promise<string[]> {
       parquetFiles.push(fileInfo.path);
     }
   }
+  console.log(`Total parquet files found: ${parquetFiles.length}`);
   return parquetFiles;
 }
 
@@ -70,7 +72,8 @@ export class Parquet {
       path: filePath,
       revision: REVISION,
       // experimental, live on the edge, aims high fail low, break stuff...
-      xet: true,
+      // not supported natively by safari
+      // xet: true,
     });
     if (!file) {
       throw new Error(`Failed to download file: ${filePath}`);

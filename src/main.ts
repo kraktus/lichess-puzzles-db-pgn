@@ -1,4 +1,11 @@
 import "./style.css";
+
+// `ReadableByteStreamController` is needed by @huggingface/hub.downloadFile with xet: true
+// and safari does not support it natively
+// if (typeof ReadableByteStreamController === "undefined") {
+//   await import("web-streams-polyfill/polyfill");
+// }
+
 import {
   init,
   classModule,
@@ -109,6 +116,8 @@ const rangeInput = (
   ]);
 
 class Controller {
+  private db: Db;
+
   ops: PgnFilerSortExportOptions;
   parquet: Parquet;
   dropdowns: DropdownsState;
@@ -117,8 +126,9 @@ class Controller {
   old: HTMLElement | VNode;
 
   constructor(elem: HTMLElement, db: Db) {
+    this.db = db;
     this.ops = new PgnFilerSortExportOptions();
-    this.parquet = new Parquet(db);
+    this.parquet = new Parquet(this.db);
     // DEBUG to true
     this.dropdowns = {
       filter: true,
@@ -291,9 +301,24 @@ class Controller {
             "summary.btn btn-ghost rounded-field text-sm underline color-bg ",
             "Advanced",
           ),
-          h("ul.menu.dropdown-content.bg-base-100 w-full", [
-            h("li", h("a", "Item 1")),
-            h("li", h("a", "Item 2")),
+          h("ul.menu dropdown-content bg-base-100 w-full", [
+            h(
+              "li",
+              h(
+                "button.btn button-ghost underline text-error",
+                {
+                  on: {
+                    click: () => {
+                      this.db.clearDb().then((_) =>
+                        // refresh page
+                        window.location.reload(),
+                      );
+                    },
+                  },
+                },
+                "Clear all data",
+              ),
+            ),
           ]),
         ]),
       ]),

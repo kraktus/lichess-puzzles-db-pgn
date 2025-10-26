@@ -44,12 +44,13 @@ export class Db {
     });
   }
 
-  // delete the current Db (IDB + Localstorage), and replace it by a new one
-  async freshDb(): Promise<Db> {
+  // delete the current Db (IDB + Localstorage)
+  async clearDb(): Promise<void> {
     const closeDb = this.inner;
     closeDb.close();
     const deleteReq = indexedDB.deleteDatabase(prefix);
-    await new Promise<void>((resolve, reject) => {
+    localStorage.clear();
+    return new Promise<void>((resolve, reject) => {
       deleteReq.onsuccess = () => {
         console.log("IndexedDB deleted successfully");
         resolve();
@@ -63,7 +64,6 @@ export class Db {
         alert(blocked);
       };
     });
-    return await Db.open();
   }
 
   async getIndexedDb(key: string): Promise<string | null> {
