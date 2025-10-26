@@ -154,7 +154,7 @@ class Controller {
     return h("div.max-w-4xl.mx-auto.py-10.px-4", [
       h("h1.text-2xl.mb-8.text-center", "Lichess Puzzles to PGN"),
 
-      this.parquet.downloadNeeded()
+      this.parquet.downloadNeeded({ ifAlreadyWip: false })
         ? h(
             "div.flex.justify-center", // parent with flex and horizontal centering
             [

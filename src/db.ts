@@ -66,11 +66,11 @@ export class Db {
     });
   }
 
-  async getIndexedDb(key: string): Promise<string | null> {
+  async getIndexedDb<T extends IDbValue>(key: string): Promise<T | null> {
     const tx = this.inner.transaction(objectStore, "readonly");
     const store = tx.objectStore(objectStore);
     const req = store.get(key);
-    return new Promise<string | null>((resolve, reject) => {
+    return new Promise<T | null>((resolve, reject) => {
       req.onsuccess = () => {
         if (req.result) {
           resolve(req.result.data);

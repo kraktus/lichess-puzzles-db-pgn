@@ -1,5 +1,7 @@
-import { Db } from "./db";
 import { listFiles, downloadFile } from "@huggingface/hub";
+import { parquetReadObjects, asyncBufferFromUrl } from "hyparquet";
+
+import { Db } from "./db";
 
 const REPO_ID = "datasets/Lichess/chess-puzzles";
 const REVISION = "main";
@@ -39,16 +41,62 @@ export class Parquet {
       console.log(
         `Puzzle CSV last retrieved: ${this.lastUpdated.toISOString()}`,
       );
+      // DEBUG
+      this.readPuzzleDb();
     }
   }
 
-  downloadNeeded() {
-    if (this.dlWip) return false;
+  downloadNeeded(ops: { ifAlreadyWip: boolean }): boolean {
+    if (this.dlWip) return ops.ifAlreadyWip;
     if (!this.lastUpdated) return true;
     const now = new Date();
     const diff = now.getTime() - this.lastUpdated.getTime();
     const oneWeek = 7 * 24 * 60 * 60 * 1000;
     return diff > oneWeek;
+  }
+
+  async readPuzzleDb() {
+    if (this.downloadNeeded({ ifAlreadyWip: true })) {
+      throw new Error("Parquet files need to be downloaded/refreshed first.");
+    }
+    const fileKeys = await this.db.getIndexedDb<string[]>(
+      LIST_PARQUET_PATHS_KEY,
+    );
+    if (!fileKeys) {
+      throw new Error("No parquet file paths found in the database.");
+    }
+    for (const fileKey of fileKeys) {
+      const file = await this.db.getIndexedDb<ArrayBuffer>(fileKey);
+      if (!file) {
+        throw new Error(`Parquet file not found in DB: ${fileKey}`);
+      }
+      // process the fileBuf as needed
+      const data = await parquetReadObjects({ file });
+      console.log(
+        `Read ${data.length} records from ${fileKey}, ${data.slice(0, 5)}`,
+      );
+    }
+  }
+
+  async mreReadWorking() {
+    const url =
+      "https://huggingface.co/datasets/Lichess/antichess-chess-openings/resolve/main/data/train-00000-of-00001.parquet";
+    const file = await asyncBufferFromUrl({ url }); // wrap url for async fetching
+    const data = await parquetReadObjects({
+      file,
+    });
+    console.log("MRE parquet read objects:", data.slice(0, 5));
+  }
+
+  async mreReadNotWorking() {
+    const url =
+      "https://huggingface.co/datasets/Lichess/antichess-chess-openings/resolve/main/data/train-00000-of-00001.parquet";
+    const resp = await fetch(url);
+    const file = await resp.arrayBuffer();
+    const data = await parquetReadObjects({
+      file,
+    });
+    console.log("MRE parquet read objects:", data.slice(0, 5));
   }
 
   // download the .parquet files from the dataset
