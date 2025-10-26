@@ -14,7 +14,8 @@ import { capitalizeFirstLetter } from "./util";
 import { type ThemeKey, puzzleThemes } from "./themes";
 import { section, themesMenu, footer } from "./view";
 import { makeModal } from "./modal";
-import { PuzzleCsv } from "./puzzle";
+import { Db } from "./db";
+import { Parquet } from "./parquet";
 
 const patch = init([
   // Init patch function with chosen modules
@@ -109,15 +110,15 @@ const rangeInput = (
 
 class Controller {
   ops: PgnFilerSortExportOptions;
-  puzzleCsv: PuzzleCsv;
+  parquet: Parquet;
   dropdowns: DropdownsState;
   wipFilter: Set<ThemeKey>;
 
   old: HTMLElement | VNode;
 
-  constructor(elem: HTMLElement) {
+  constructor(elem: HTMLElement, db: Db) {
     this.ops = new PgnFilerSortExportOptions();
-    this.puzzleCsv = new PuzzleCsv();
+    this.parquet = new Parquet(db);
     // DEBUG to true
     this.dropdowns = {
       filter: true,
@@ -143,7 +144,7 @@ class Controller {
     return h("div.max-w-4xl.mx-auto.py-10.px-4", [
       h("h1.text-2xl.mb-8.text-center", "Lichess Puzzles to PGN"),
 
-      this.puzzleCsv.downloadNeeded()
+      this.parquet.downloadNeeded()
         ? h(
             "div.flex.justify-center", // parent with flex and horizontal centering
             [
@@ -152,7 +153,7 @@ class Controller {
                 {
                   on: {
                     click: () => {
-                      this.puzzleCsv.download().then(() => this.redraw());
+                      this.parquet.download().then(() => this.redraw());
                       this.redraw();
                     },
                   },
@@ -285,8 +286,17 @@ class Controller {
             h("span", "Puzzle characteristics as PGN comment"),
           ]),
         ]),
+        h("details.dropdown dropdown-end w-full", [
+          h(
+            "summary.btn btn-ghost rounded-field text-sm underline color-bg ",
+            "Advanced",
+          ),
+          h("ul.menu.dropdown-content.bg-base-100 w-full", [
+            h("li", h("a", "Item 1")),
+            h("li", h("a", "Item 2")),
+          ]),
+        ]),
       ]),
-
       // Action Button
       h("div.text-center.mt-8", [
         h("button.btn.btn-primary.btn-wide", "Generate PGN"),
@@ -387,5 +397,7 @@ class Controller {
 }
 
 const container = document.getElementById("container")!;
-const ctrl = new Controller(container);
-ctrl.redraw();
+Db.open().then((db) => {
+  const ctrl = new Controller(container, db);
+  ctrl.redraw();
+});

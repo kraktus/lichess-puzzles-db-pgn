@@ -11,7 +11,7 @@ export class Db {
     this.inner = inner;
   }
 
-  static async openDb(): Promise<Db> {
+  static async open(): Promise<Db> {
     const openReq = indexedDB.open(prefix, 1);
     return new Promise<Db>((resolve) => {
       openReq.onupgradeneeded = () => {
@@ -42,6 +42,28 @@ export class Db {
         resolve(new Db(db));
       };
     });
+  }
+
+  // delete the current Db (IDB + Localstorage), and replace it by a new one
+  async freshDb(): Promise<Db> {
+    const closeDb = this.inner;
+    closeDb.close();
+    const deleteReq = indexedDB.deleteDatabase(prefix);
+    await new Promise<void>((resolve, reject) => {
+      deleteReq.onsuccess = () => {
+        console.log("IndexedDB deleted successfully");
+        resolve();
+      };
+      deleteReq.onerror = (event: any) =>
+        reject(new Error(`Failed to delete IndexedDB: ${event}`));
+      deleteReq.onblocked = () => {
+        const blocked =
+          "Database deletion is blocked, close all other tabs of this page";
+        console.error(blocked);
+        alert(blocked);
+      };
+    });
+    return await Db.open();
   }
 
   async getIndexedDb(key: string): Promise<string | null> {
