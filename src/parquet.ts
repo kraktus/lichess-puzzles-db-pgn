@@ -41,8 +41,6 @@ export class Parquet {
       console.log(
         `Puzzle CSV last retrieved: ${this.lastUpdated.toISOString()}`,
       );
-      // DEBUG
-      this.readPuzzleDb();
     }
   }
 
@@ -76,27 +74,6 @@ export class Parquet {
         `Read ${data.length} records from ${fileKey}, ${data.slice(0, 5)}`,
       );
     }
-  }
-
-  async mreReadWorking() {
-    const url =
-      "https://huggingface.co/datasets/Lichess/antichess-chess-openings/resolve/main/data/train-00000-of-00001.parquet";
-    const file = await asyncBufferFromUrl({ url }); // wrap url for async fetching
-    const data = await parquetReadObjects({
-      file,
-    });
-    console.log("MRE parquet read objects:", data.slice(0, 5));
-  }
-
-  async mreReadNotWorking() {
-    const url =
-      "https://huggingface.co/datasets/Lichess/antichess-chess-openings/resolve/main/data/train-00000-of-00001.parquet";
-    const resp = await fetch(url);
-    const file = await resp.arrayBuffer();
-    const data = await parquetReadObjects({
-      file,
-    });
-    console.log("MRE parquet read objects:", data.slice(0, 5));
   }
 
   // download the .parquet files from the dataset
