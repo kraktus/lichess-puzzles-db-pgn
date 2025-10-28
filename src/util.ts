@@ -25,6 +25,15 @@ export async function toBase64(file: Blob): Promise<string> {
   });
 }
 
+export const sortingIncludingBigInt = (
+  a: bigint | number,
+  b: bigint | number,
+): number => {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+};
+
 export async function toBlob(
   base64: string,
   mimeType: string = "application/octet-stream",

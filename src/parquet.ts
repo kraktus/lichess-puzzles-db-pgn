@@ -5,6 +5,7 @@ import { compressors } from "hyparquet-compressors";
 import { Db } from "./db";
 import { PgnFilerSortExportOptions, filterPuzzle, puzzleToPGN } from "./pgn";
 import { Status } from "./view";
+import { sortingIncludingBigInt } from "./util";
 
 const REPO_ID = "datasets/Lichess/chess-puzzles";
 const REVISION = "main";
@@ -146,10 +147,12 @@ export class Parquet {
     console.log(`All parquet file read, sorting...`);
     if (opts.sortBy == "rating") {
       this.status.update(`Sorting by rating`);
-      results.sort((a, b) => b.Rating - a.Rating);
+      results.sort((a, b) => sortingIncludingBigInt(a.Rating, b.Rating));
     } else if (opts.sortBy == "popularity") {
       this.status.update(`Sorting by popularity`);
-      results.sort((a, b) => b.Popularity - a.Popularity);
+      results.sort((a, b) =>
+        sortingIncludingBigInt(b.Popularity, a.Popularity),
+      );
     }
 
     if (opts.maxPuzzles !== undefined) {

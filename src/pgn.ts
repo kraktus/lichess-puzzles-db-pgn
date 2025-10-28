@@ -100,6 +100,7 @@ export function puzzleToPGN(
   if (options.includeComments) {
     const endNode = game.moves.end();
     if (isChildNode(endNode)) {
+      // FIXME not working
       endNode.data.comments = puzzleRecordToStr(puzzle);
     } else {
       throw new Error(
