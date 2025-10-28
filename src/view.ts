@@ -1,7 +1,7 @@
 import { h, type VNode, type VNodeChildren } from "snabbdom";
 
 import { themeByCateg, type PuzzleTheme, type ThemeKey } from "./themes";
-import { ifAny, toggleElm } from "./util";
+import { toggleElm } from "./util";
 
 export const section = (
   title: string,
@@ -51,10 +51,7 @@ export const themesMenu = (
           "details",
           {
             attrs: {
-              open: ifAny(
-                themes.map((t) => t.key),
-                (k) => filtered.has(k),
-              ),
+              open: themes.map((t) => t.key).some(filtered.has),
             },
           },
           [h("summary", categ), h("ul", themes.map(lia))],
