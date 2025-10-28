@@ -28,6 +28,9 @@ importers:
       hyparquet:
         specifier: ^1.20.1
         version: 1.20.1
+      hyparquet-compressors:
+        specifier: ^1.1.1
+        version: 1.1.1
       snabbdom:
         specifier: ^3.5.1
         version: 3.6.3
@@ -963,6 +966,12 @@ packages:
     engines: { node: ^8.16.0 || ^10.6.0 || >=11.0.0 }
     os: [darwin]
 
+  fzstd@0.1.1:
+    resolution:
+      {
+        integrity: sha512-dkuVSOKKwh3eas5VkJy1AW1vFpet8TA/fGmVA5krThl8YcOVE/8ZIoEA1+U1vEn5ckxxhLirSdY837azmbaNHA==,
+      }
+
   glob-parent@5.1.2:
     resolution:
       {
@@ -976,10 +985,22 @@ packages:
         integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==,
       }
 
+  hyparquet-compressors@1.1.1:
+    resolution:
+      {
+        integrity: sha512-yx7aA3Rhj0YycbdV71+XznQSLAefa4cT0urpgNXy4aM6eSeCknaVDNne8y45Uz74Fb15yyXUzOStlceOJBan7A==,
+      }
+
   hyparquet@1.20.1:
     resolution:
       {
         integrity: sha512-3A7cnSQDFcmbs+kljXNhXn0O2/8aNJgkS1Tjwd5jLEIaRxmjO+TtxNWAfl72ab4YjYMpxv1TPVjOTJsfNdaeDg==,
+      }
+
+  hysnappy@1.0.0:
+    resolution:
+      {
+        integrity: sha512-MNrC4NfwDGPb889O6gIfEtbvEZCSWUsSEhsz4Oq2FRcpGtXHfeVz3KciSPp5Pnnz1NjFMgDQNfxdJozymJEDDA==,
       }
 
   ieee754@1.2.1:
@@ -1987,13 +2008,22 @@ snapshots:
   fsevents@2.3.3:
     optional: true
 
+  fzstd@0.1.1: {}
+
   glob-parent@5.1.2:
     dependencies:
       is-glob: 4.0.3
 
   graceful-fs@4.2.11: {}
 
+  hyparquet-compressors@1.1.1:
+    dependencies:
+      fzstd: 0.1.1
+      hysnappy: 1.0.0
+
   hyparquet@1.20.1: {}
+
+  hysnappy@1.0.0: {}
 
   ieee754@1.2.1: {}
 

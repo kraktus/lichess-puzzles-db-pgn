@@ -28,6 +28,7 @@
     "chessops": "^0.15.0",
     "daisyui": "^5.3.8",
     "hyparquet": "^1.20.1",
+    "hyparquet-compressors": "^1.1.1",
     "snabbdom": "^3.5.1",
     "tailwindcss": "^4.1.15",
     "web-streams-polyfill": "^4.2.0"

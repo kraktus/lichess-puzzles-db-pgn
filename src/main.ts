@@ -23,6 +23,12 @@ import { section, themesMenu, footer } from "./view";
 import { makeModal } from "./modal";
 import { Db } from "./db";
 import { Parquet } from "./parquet";
+import {
+  ceilingPuzzleRating,
+  floorPuzzleRating,
+  type SortBy,
+  PgnFilerSortExportOptions,
+} from "./pgn";
 
 const patch = init([
   // Init patch function with chosen modules
@@ -36,45 +42,6 @@ const patch = init([
 const VERSION = "v0.0.1";
 console.log(VERSION);
 
-const floorPuzzleRating = 400;
-const ceilingPuzzleRating = 4000; // TODO check that
-
-type SortBy = "rating" | "popularity";
-
-class PgnFilerSortExportOptions {
-  // first level of sets for OR within a group, second set for AND between groups
-  themeFilters: Set<ThemeKey>[];
-  minRating: number;
-  maxRating: number;
-  maxPuzzles?: number;
-
-  // if nothing set, unordered, in the order of retrieval
-  sortBy?: SortBy;
-
-  includeTags: boolean;
-  includeComments: boolean;
-
-  constructor() {
-    // DEBUG
-    this.themeFilters = [
-      new Set([
-        "opening",
-        "middlegame",
-        "endgame",
-        "rookEndgame",
-        "bishopEndgame",
-        "pawnEndgame",
-        "knightEndgame",
-        "queenEndgame",
-        "queenRookEndgame",
-      ]),
-    ];
-    this.minRating = floorPuzzleRating;
-    this.maxRating = ceilingPuzzleRating;
-    this.includeTags = true;
-    this.includeComments = false;
-  }
-}
 // whether each dropdown is opened
 interface DropdownsState {
   filter: boolean;

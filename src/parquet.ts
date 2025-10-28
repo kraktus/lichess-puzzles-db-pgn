@@ -1,5 +1,6 @@
 import { listFiles, downloadFile } from "@huggingface/hub";
 import { parquetReadObjects, asyncBufferFromUrl } from "hyparquet";
+import { compressors } from "hyparquet-compressors";
 
 import { Db } from "./db";
 
@@ -9,6 +10,26 @@ const REVISION = "main";
 // the IDb key where the list of parquet files paths are stored
 // those paths are themselves keys to retrieve the content
 const LIST_PARQUET_PATHS_KEY = "parquetPaths";
+
+const COLUMNS = ["PuzzleId", "FEN", "Moves", "Rating", "Popularity", "Themes"];
+
+export type PuzzleRecord = {
+  PuzzleId: string;
+  FEN: string;
+  Moves: string;
+  Rating: number;
+  Popularity: number;
+  Themes: string[];
+};
+
+export const puzzleRecordToStr = (p: PuzzleRecord): string[] => {
+  return [
+    `PuzzleId: ${p.PuzzleId}`,
+    `Rainting: ${p.Rating}`,
+    `Popularity: ${p.Popularity}`,
+    `Themes: ${p.Themes.join(", ")}`,
+  ];
+};
 
 async function listParquetFilePaths(): Promise<string[]> {
   const parquetFiles: string[] = [];
@@ -68,8 +89,12 @@ export class Parquet {
       if (!file) {
         throw new Error(`Parquet file not found in DB: ${fileKey}`);
       }
-      // process the fileBuf as needed
-      const data = await parquetReadObjects({ file });
+      const data = await parquetReadObjects({
+        file,
+        columns: COLUMNS,
+        compressors,
+      });
+      // TODO, what to do
       console.log(
         `Read ${data.length} records from ${fileKey}, ${data.slice(0, 5)}`,
       );
@@ -91,7 +116,7 @@ export class Parquet {
   }
 
   private async downloadAndStore(filePath: string) {
-    console.log(`⬇️ Downloading ${filePath} ...`);
+    console.log(`Downloading ${filePath} ...`);
     const file = await downloadFile({
       repo: REPO_ID,
       path: filePath,
