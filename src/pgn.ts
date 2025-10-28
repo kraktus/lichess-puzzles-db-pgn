@@ -34,23 +34,12 @@ export class PgnFilerSortExportOptions {
 
   constructor() {
     // DEBUG
-    this.themeFilters = [
-      new Set([
-        "opening",
-        "middlegame",
-        "endgame",
-        "rookEndgame",
-        "bishopEndgame",
-        "pawnEndgame",
-        "knightEndgame",
-        "queenEndgame",
-        "queenRookEndgame",
-      ]),
-    ];
+    this.themeFilters = [new Set(["opening"])];
     this.minRating = floorPuzzleRating;
     this.maxRating = ceilingPuzzleRating;
     this.includeTags = true;
     this.includeComments = false;
+    this.maxPuzzles = 10; // DEBUG
   }
 }
 export const filterPuzzle = (
@@ -104,8 +93,9 @@ export function puzzleToPGN(
     if (!move) throw new Error(`Invalid UCI move: ${moveStr}`);
     const san = makeSan(pos, move);
     pos.play(move);
-    return san;
+    return { san };
   });
+  extend(game.moves, sans);
 
   if (options.includeComments) {
     const endNode = game.moves.end();

@@ -3,6 +3,8 @@ import { parquetReadObjects, asyncBufferFromUrl } from "hyparquet";
 import { compressors } from "hyparquet-compressors";
 
 import { Db } from "./db";
+import { PgnFilerSortExportOptions, filterPuzzle, puzzleToPGN } from "./pgn";
+import { Status } from "./view";
 
 const REPO_ID = "datasets/Lichess/chess-puzzles";
 const REVISION = "main";
@@ -22,6 +24,7 @@ export type PuzzleRecord = {
   Themes: string[];
 };
 
+// FEN is not the start of the position, see `puzzleToPGN`, moves are in the PGN already
 export const puzzleRecordToStr = (p: PuzzleRecord): string[] => {
   return [
     `PuzzleId: ${p.PuzzleId}`,
@@ -48,13 +51,42 @@ async function listParquetFilePaths(): Promise<string[]> {
   return parquetFiles;
 }
 
+// Download wip status
+class Dl {
+  // when download is NOT in progress, `undefined`
+  // otherwise it's a `Promise` that resolve when it's finished
+  private whenFinished: Promise<void> | undefined;
+
+  constructor() {
+    this.whenFinished = undefined;
+  }
+
+  inProgress(): boolean {
+    return this.whenFinished !== undefined;
+  }
+
+  start(dlPromise: Promise<void>) {
+    this.whenFinished = dlPromise;
+  }
+
+  async resolveWHenFinished(): Promise<void> {
+    if (!this.whenFinished) {
+      return Promise.resolve();
+    }
+    return this.whenFinished.then(() => {
+      this.whenFinished = undefined;
+    });
+  }
+}
+
 export class Parquet {
   private db: Db;
   // whether download is in progress or not
-  private dlWip: boolean = false;
-  lastUpdated?: Date;
+  private dl: Dl;
+  private lastUpdated?: Date;
+  private status: Status;
 
-  constructor(db: Db) {
+  constructor(db: Db, status: Status) {
     this.db = db;
     const retrieved = this.db.getLocalStorage("last-updated");
     this.lastUpdated = retrieved ? new Date(retrieved) : undefined;
@@ -63,10 +95,12 @@ export class Parquet {
         `Puzzle CSV last retrieved: ${this.lastUpdated.toISOString()}`,
       );
     }
+    this.dl = new Dl();
+    this.status = status;
   }
 
   downloadNeeded(ops: { ifAlreadyWip: boolean }): boolean {
-    if (this.dlWip) return ops.ifAlreadyWip;
+    if (this.dl.inProgress()) return ops.ifAlreadyWip;
     if (!this.lastUpdated) return true;
     const now = new Date();
     const diff = now.getTime() - this.lastUpdated.getTime();
@@ -74,7 +108,9 @@ export class Parquet {
     return diff > oneWeek;
   }
 
-  async readPuzzleDb() {
+  async readFilterSortPuzzleDb(
+    opts: PgnFilerSortExportOptions,
+  ): Promise<PuzzleRecord[]> {
     if (this.downloadNeeded({ ifAlreadyWip: true })) {
       throw new Error("Parquet files need to be downloaded/refreshed first.");
     }
@@ -84,35 +120,74 @@ export class Parquet {
     if (!fileKeys) {
       throw new Error("No parquet file paths found in the database.");
     }
-    for (const fileKey of fileKeys) {
+    let results: PuzzleRecord[] = [];
+    for (const [i, fileKey] of fileKeys.entries()) {
+      console.log(`Retrieving parquet file ${fileKey}`);
       const file = await this.db.getIndexedDb<ArrayBuffer>(fileKey);
       if (!file) {
         throw new Error(`Parquet file not found in DB: ${fileKey}`);
       }
+      console.log(`Retrieved parquet file ${fileKey}`);
+      this.status.update(
+        `Reading parquet file ${i + 1} of ${fileKeys.length}...`,
+      );
+      console.log(`Reading parquet file ${fileKey}`);
       const data = await parquetReadObjects({
         file,
         columns: COLUMNS,
         compressors,
       });
-      // TODO, what to do
-      console.log(
-        `Read ${data.length} records from ${fileKey}, ${data.slice(0, 5)}`,
+      console.log(`Filterring parquet file ${fileKey}`);
+      // not sure if that's faster than loop filter push, shouldn't matter
+      results = results.concat(
+        (data as PuzzleRecord[]).filter((p) => filterPuzzle(p, opts)),
       );
     }
+    console.log(`All parquet file read, sorting...`);
+    if (opts.sortBy == "rating") {
+      this.status.update(`Sorting by rating`);
+      results.sort((a, b) => b.Rating - a.Rating);
+    } else if (opts.sortBy == "popularity") {
+      this.status.update(`Sorting by popularity`);
+      results.sort((a, b) => b.Popularity - a.Popularity);
+    }
+
+    if (opts.maxPuzzles !== undefined) {
+      this.status.update(`Only keeping firsts ${opts.maxPuzzles} `);
+      results = results.slice(0, opts.maxPuzzles);
+    }
+    return results;
+  }
+
+  // return the PGN as string
+  async pgnPipeline(opts: PgnFilerSortExportOptions): Promise<string> {
+    // we only want to restart a download if not alreay wip
+    if (this.downloadNeeded({ ifAlreadyWip: false })) {
+      await this.download();
+    }
+    this.status.update("Downloading the puzzle database...");
+    await this.dl.resolveWHenFinished();
+    const puzzleRecords = await this.readFilterSortPuzzleDb(opts);
+
+    this.status.update(`Exporting ${puzzleRecords.length} puzzles to PGN...`);
+    return puzzleRecords.map((p) => puzzleToPGN(p, opts)).join("\n\n");
   }
 
   // download the .parquet files from the dataset
   // never cached when called from here
   async download() {
-    this.dlWip = true;
-    const parquetPaths = await listParquetFilePaths();
-    await this.db.setIndexedDb(LIST_PARQUET_PATHS_KEY, parquetPaths);
-    for (const parquetPath of parquetPaths) {
-      await this.downloadAndStore(parquetPath);
-    }
-    this.lastUpdated = new Date();
-    this.db.setLocalSorage("last-updated", this.lastUpdated.toISOString());
-    this.dlWip = false;
+    this.dl.start(
+      new Promise(async (dlFinished) => {
+        const parquetPaths = await listParquetFilePaths();
+        await this.db.setIndexedDb(LIST_PARQUET_PATHS_KEY, parquetPaths);
+        for (const parquetPath of parquetPaths) {
+          await this.downloadAndStore(parquetPath);
+        }
+        this.lastUpdated = new Date();
+        this.db.setLocalSorage("last-updated", this.lastUpdated.toISOString());
+        dlFinished();
+      }),
+    );
   }
 
   private async downloadAndStore(filePath: string) {

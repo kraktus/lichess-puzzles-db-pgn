@@ -17,9 +17,9 @@ import {
   type VNode,
 } from "snabbdom";
 
-import { capitalizeFirstLetter } from "./util";
+import { capitalizeFirstLetter, downloadTextFile } from "./util";
 import { type ThemeKey, puzzleThemes } from "./themes";
-import { section, themesMenu, footer } from "./view";
+import { section, themesMenu, footer, Status } from "./view";
 import { makeModal } from "./modal";
 import { Db } from "./db";
 import { Parquet } from "./parquet";
@@ -89,13 +89,17 @@ class Controller {
   parquet: Parquet;
   dropdowns: DropdownsState;
   wipFilter: Set<ThemeKey>;
+  status: Status;
 
   old: HTMLElement | VNode;
 
   constructor(elem: HTMLElement, db: Db) {
+    this.old = elem;
+
     this.db = db;
+    this.status = new Status(this.redraw.bind(this));
     this.ops = new PgnFilerSortExportOptions();
-    this.parquet = new Parquet(this.db);
+    this.parquet = new Parquet(this.db, this.status);
     // DEBUG to true
     this.dropdowns = {
       filter: true,
@@ -104,8 +108,6 @@ class Controller {
     };
     // the empty set allows to have an "add new filter" button
     this.wipFilter = new Set();
-
-    this.old = elem;
   }
   redraw() {
     this.old = patch(this.old, this.view());
@@ -290,8 +292,29 @@ class Controller {
         ]),
       ]),
       // Action Button
-      h("div.text-center.mt-8", [
-        h("button.btn.btn-primary.btn-wide", "Generate PGN"),
+      h("div.text-center.mt-8 mb-8", [
+        this.status.view() ??
+          h(
+            "button.btn.btn-primary.btn-wide",
+            {
+              on: {
+                click: () => {
+                  this.status.show = true;
+                  this.parquet.pgnPipeline(this.ops).then((pgn) => {
+                    this.status.update("Preparing download...");
+                    downloadTextFile({
+                      content: pgn,
+                      filename: "lichess-puzzles.pgn",
+                    });
+                    this.status.show = false;
+                    this.redraw();
+                  });
+                  this.redraw();
+                },
+              },
+            },
+            "Generate PGN",
+          ),
       ]),
       footer,
     ]);

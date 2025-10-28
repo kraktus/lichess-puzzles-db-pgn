@@ -3,6 +3,28 @@ import { h, type VNode, type VNodeChildren } from "snabbdom";
 import { themeByCateg, type PuzzleTheme, type ThemeKey } from "./themes";
 import { toggleElm } from "./util";
 
+export class Status {
+  private msg: string;
+  private redraw: () => void;
+  show: boolean;
+
+  constructor(redraw: () => void) {
+    this.msg = "";
+    this.redraw = redraw;
+    this.show = false;
+  }
+
+  update(msg: string) {
+    this.msg = msg;
+    console.log(`Status: ${msg}`);
+    this.redraw();
+  }
+
+  view(): VNode | undefined {
+    return this.show ? h("div.btn btn-info btn-block", this.msg) : undefined;
+  }
+}
+
 export const section = (
   title: string,
   opened: boolean,
@@ -51,7 +73,7 @@ export const themesMenu = (
           "details",
           {
             attrs: {
-              open: themes.map((t) => t.key).some(filtered.has),
+              open: themes.map((t) => t.key).some((key) => filtered.has(key)),
             },
           },
           [h("summary", categ), h("ul", themes.map(lia))],
