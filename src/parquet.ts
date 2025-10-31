@@ -183,6 +183,7 @@ export class Parquet {
 
   // return the PGN as string
   async pgnPipeline(opts: PgnFilerSortExportOptions): Promise<string> {
+    console.log(`Starting PGN export pipeline, ops ${JSON.stringify(opts)}`);
     // we only want to restart a download if not alreay wip
     if (this.downloadNeeded({ ifAlreadyWip: false })) {
       await this.download();

@@ -37,6 +37,38 @@ export const section = (
     h("div.collapse-content.space-y-6", children),
   ]);
 
+// h("label.cursor-pointer.flex.items-center.gap-2", [
+//             h("input.checkbox.checkbox-primary", {
+//               attrs: { type: "checkbox" },
+//               on: {
+//                 change: this.bind((e: any) => {
+//                   this.opts.includeTags = (
+//                     e.target as HTMLInputElement
+//                   ).checked;
+//                 }),
+//               },
+//             }),
+//             h("span", "Puzzle characteristics as PGN tags"),
+//           ])
+export const checkboxPGNInclude = (
+  color: "checkbox-primary" | "checkbox-secondary",
+  label: string,
+  checked: boolean,
+  onChange: (checked: boolean) => void,
+): VNode => {
+  return h("label.cursor-pointer.flex.items-center.gap-2", [
+    h(`input.checkbox ${color}`, {
+      attrs: { type: "checkbox", checked: checked },
+      on: {
+        change: (e: any) => {
+          onChange((e.target as HTMLInputElement).checked);
+        },
+      },
+    }),
+    h("span", label),
+  ]);
+};
+
 // `filtered` are themes already selected
 export const themesMenu = (
   filtered: Set<ThemeKey>,

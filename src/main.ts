@@ -19,7 +19,13 @@ import {
 
 import { capitalizeFirstLetter, downloadTextFile, isMobile } from "./util";
 import { type ThemeKey, puzzleThemes } from "./themes";
-import { section, themesMenu, footer, Status } from "./view";
+import {
+  section,
+  themesMenu,
+  footer,
+  Status,
+  checkboxPGNInclude,
+} from "./view";
 import { makeModal } from "./modal";
 import { Db } from "./db";
 import { Parquet } from "./parquet";
@@ -85,7 +91,7 @@ const rangeInput = (
 class Controller {
   private db: Db;
 
-  ops: PgnFilerSortExportOptions;
+  opts: PgnFilerSortExportOptions;
   parquet: Parquet;
   dropdowns: DropdownsState;
   wipFilter: Set<ThemeKey>;
@@ -98,7 +104,7 @@ class Controller {
 
     this.db = db;
     this.status = new Status(this.redraw.bind(this));
-    this.ops = new PgnFilerSortExportOptions();
+    this.opts = new PgnFilerSortExportOptions();
     this.parquet = new Parquet(
       this.db,
       this.status,
@@ -173,13 +179,13 @@ class Controller {
         section("Filter", this.dropdowns.filter, [
           // Min Rating
           rangeInput(
-            `Minimum Rating: ${this.ops.minRating}`,
+            `Minimum Rating: ${this.opts.minRating}`,
             "primary",
             floorPuzzleRating,
             ceilingPuzzleRating,
-            ceilingPuzzleRating - this.ops.minRating + floorPuzzleRating,
+            ceilingPuzzleRating - this.opts.minRating + floorPuzzleRating,
             (e: any) => {
-              this.ops.minRating =
+              this.opts.minRating =
                 ceilingPuzzleRating -
                 Number(e.target.value) +
                 floorPuzzleRating;
@@ -189,14 +195,14 @@ class Controller {
           ),
           // Max Rating
           rangeInput(
-            `Maximum Rating: ${this.ops.maxRating}`,
+            `Maximum Rating: ${this.opts.maxRating}`,
             "secondary",
             floorPuzzleRating,
             ceilingPuzzleRating,
-            this.ops.maxRating,
+            this.opts.maxRating,
             this.simpleOptsUpdate("maxRating"),
           ),
-          this.ops.minRating > this.ops.maxRating
+          this.opts.minRating > this.opts.maxRating
             ? h(
                 "div.alert alert-error alert-soft",
                 {
@@ -226,14 +232,14 @@ class Controller {
               attrs: {
                 type: "number",
                 min: 1,
-                value: this.ops.maxPuzzles ?? "",
+                value: this.opts.maxPuzzles ?? "",
               },
               on: {
                 // no need to redraw here, already shown on the screen
                 input: (e: any) => {
                   const val = Number((e.target as HTMLInputElement).value);
-                  if (val >= 1) this.ops.maxPuzzles = val;
-                  else this.ops.maxPuzzles = undefined;
+                  if (val >= 1) this.opts.maxPuzzles = val;
+                  else this.opts.maxPuzzles = undefined;
                 },
               },
             }),
@@ -256,18 +262,22 @@ class Controller {
 
         // Include Section
         section("Export options", this.dropdowns.exportOptions, [
-          h("label.cursor-pointer.flex.items-center.gap-2", [
-            h("input.checkbox.checkbox-primary", {
-              attrs: { type: "checkbox" },
-            }),
-            h("span", "Puzzle characteristics as PGN tags"),
-          ]),
-          h("label.cursor-pointer.flex.items-center.gap-2", [
-            h("input.checkbox.checkbox-secondary", {
-              attrs: { type: "checkbox" },
-            }),
-            h("span", "Puzzle characteristics as PGN comment"),
-          ]),
+          checkboxPGNInclude(
+            "checkbox-primary",
+            "Puzzle characteristics as PGN tags",
+            this.opts.includeTags,
+            (checked) => {
+              this.opts.includeTags = checked;
+            },
+          ),
+          checkboxPGNInclude(
+            "checkbox-secondary",
+            "Puzzle characteristics as PGN comment",
+            this.opts.includeComments,
+            (checked) => {
+              this.opts.includeComments = checked;
+            },
+          ),
         ]),
         h("details.dropdown dropdown-end w-full", [
           h(
@@ -331,7 +341,7 @@ class Controller {
               on: {
                 click: () => {
                   this.status.show = true;
-                  this.parquet.pgnPipeline(this.ops).then((pgn) => {
+                  this.parquet.pgnPipeline(this.opts).then((pgn) => {
                     this.status.update("Preparing download...");
                     downloadTextFile({
                       content: pgn,
@@ -352,15 +362,15 @@ class Controller {
   }
 
   private selectThemeFilters(): VNode[] {
-    const includingWip = [...this.ops.themeFilters, this.wipFilter];
+    const includingWip = [...this.opts.themeFilters, this.wipFilter];
     return includingWip.flatMap((themeFilter: Set<ThemeKey>, i) => {
       // .bind(this) might not been needed but JS is such a pain I prefer to cover for it
       const content = themesMenu(themeFilter, this.redraw.bind(this));
       const onClose = () => {
-        this.ops.themeFilters = includingWip.filter(
+        this.opts.themeFilters = includingWip.filter(
           (tf: Set<ThemeKey>) => tf.size > 0,
         );
-        // if it's not empty, it has been added to the `ops.themeFilters`
+        // if it's not empty, it has been added to the `opts.themeFilters`
         // and we need to create a new empty one, to show the "+ add filter" button
         if (this.wipFilter.size > 0) {
           this.wipFilter = new Set();
@@ -428,16 +438,16 @@ class Controller {
       h("span", capitalizeFirstLetter(key)),
     ]);
 
-  private setSort = (key: SortBy) => () => (this.ops.sortBy = key);
+  private setSort = (key: SortBy) => () => (this.opts.sortBy = key);
 
   private simpleOptsUpdate(key: keyof PgnFilerSortExportOptions) {
     return this.bind((e: any) => {
       const target = (e.target as HTMLInputElement).value;
       console.log("simple update with key and target", key, target);
       // @ts-ignore
-      if (target) this.ops[key] = Number((e.target as HTMLInputElement).value);
+      if (target) this.opts[key] = Number((e.target as HTMLInputElement).value);
       // @ts-ignore
-      else this.ops[key] = undefined;
+      else this.opts[key] = undefined;
     });
   }
 }
