@@ -17,7 +17,7 @@ import {
   type VNode,
 } from "snabbdom";
 
-import { capitalizeFirstLetter, downloadTextFile } from "./util";
+import { capitalizeFirstLetter, downloadTextFile, isMobile } from "./util";
 import { type ThemeKey, puzzleThemes } from "./themes";
 import { section, themesMenu, footer, Status } from "./view";
 import { makeModal } from "./modal";
@@ -39,7 +39,7 @@ const patch = init([
   eventListenersModule, // attaches event listeners
 ]);
 
-const VERSION = "v0.0.2";
+const VERSION = "v0.0.3";
 console.log(VERSION);
 
 // whether each dropdown is opened
@@ -99,7 +99,11 @@ class Controller {
     this.db = db;
     this.status = new Status(this.redraw.bind(this));
     this.ops = new PgnFilerSortExportOptions();
-    this.parquet = new Parquet(this.db, this.status);
+    this.parquet = new Parquet(
+      this.db,
+      this.status,
+      isMobile() ? 50_000 : 200_000,
+    );
     // DEBUG to true
     this.dropdowns = {
       filter: true,

@@ -90,9 +90,9 @@ export class Parquet {
   private dl: Dl;
   private lastUpdated?: Date;
   private status: Status;
-  rowReadChunkSize = 250_000;
+  rowReadChunkSize: number;
 
-  constructor(db: Db, status: Status) {
+  constructor(db: Db, status: Status, rowReadChunkSize: number) {
     this.db = db;
     const retrieved = this.db.getLocalStorage("last-updated");
     this.lastUpdated = retrieved ? new Date(retrieved) : undefined;
@@ -103,6 +103,7 @@ export class Parquet {
     }
     this.dl = new Dl();
     this.status = status;
+    this.rowReadChunkSize = rowReadChunkSize;
   }
 
   downloadNeeded(ops: { ifAlreadyWip: boolean }): boolean {

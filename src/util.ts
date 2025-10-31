@@ -7,6 +7,12 @@ export function toggleElm<T>(s: Set<T>, elm: T) {
   s.has(elm) ? s.delete(elm) : s.add(elm);
 }
 
+export function isMobile() {
+  return /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent,
+  );
+}
+
 export async function toBase64(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
