@@ -39,7 +39,7 @@ const patch = init([
   eventListenersModule, // attaches event listeners
 ]);
 
-const VERSION = "v0.0.1";
+const VERSION = "v0.0.2";
 console.log(VERSION);
 
 // whether each dropdown is opened
@@ -287,6 +287,32 @@ class Controller {
                 },
                 "Clear all data",
               ),
+            ),
+            h(
+              "li",
+              h("div", [
+                h(
+                  "div",
+                  h("label.label", h("span.label-text", "Parquet chunk size")),
+                ),
+                // <fieldset class="fieldset">
+                // <input type="number" class="input" placeholder="Type here" />
+                h("input.input.validator", {
+                  attrs: {
+                    type: "number",
+                    min: 1,
+                    value: this.parquet.rowReadChunkSize,
+                  },
+                  on: {
+                    // no need to redraw here, already shown on the screen
+                    input: (e: any) => {
+                      this.parquet.rowReadChunkSize = Number(
+                        (e.target as HTMLInputElement).value,
+                      );
+                    },
+                  },
+                }),
+              ]),
             ),
           ]),
         ]),

@@ -1,5 +1,9 @@
 import { listFiles, downloadFile } from "@huggingface/hub";
-import { parquetReadObjects, asyncBufferFromUrl } from "hyparquet";
+import {
+  parquetReadObjects,
+  asyncBufferFromUrl,
+  parquetMetadata,
+} from "hyparquet";
 import { compressors } from "hyparquet-compressors";
 
 import { Db } from "./db";
@@ -44,7 +48,7 @@ async function listParquetFilePaths(): Promise<string[]> {
     path: "data",
   })) {
     if (fileInfo.type === "file" && fileInfo.path.endsWith(".parquet")) {
-      console.log(`Found parquet file: ${fileInfo.path}`);
+      console.log(`Found parquet path in files: ${fileInfo.path}`);
       parquetFiles.push(fileInfo.path);
     }
   }
@@ -86,6 +90,7 @@ export class Parquet {
   private dl: Dl;
   private lastUpdated?: Date;
   private status: Status;
+  rowReadChunkSize = 250_000;
 
   constructor(db: Db, status: Status) {
     this.db = db;
@@ -128,21 +133,34 @@ export class Parquet {
       if (!file) {
         throw new Error(`Parquet file not found in DB: ${fileKey}`);
       }
-      console.log(`Retrieved parquet file ${fileKey}`);
-      this.status.update(
-        `Reading parquet file ${i + 1} of ${fileKeys.length}...`,
-      );
-      console.log(`Reading parquet file ${fileKey}`);
-      const data = await parquetReadObjects({
-        file,
-        columns: COLUMNS,
-        compressors,
-      });
-      console.log(`Filterring parquet file ${fileKey}`);
-      // not sure if that's faster than loop filter push, shouldn't matter
-      results = results.concat(
-        (data as PuzzleRecord[]).filter((p) => filterPuzzle(p, opts)),
-      );
+      console.log(`Retrieved ${fileKey}`);
+      const metadata = parquetMetadata(file);
+      const numRows = Number(metadata.num_rows);
+      console.log(`Retrieved metadata for ${fileKey}, numRows: ${numRows}`);
+      for (
+        let rowStart = 0;
+        rowStart < numRows;
+        rowStart += this.rowReadChunkSize
+      ) {
+        const rowEnd = Math.min(rowStart + this.rowReadChunkSize, numRows);
+        this.status.update(
+          `Reading parquet file ${i + 1} of ${fileKeys.length}, rows ${rowStart}/${numRows}...`,
+        );
+        const data = await parquetReadObjects({
+          file,
+          columns: COLUMNS,
+          rowStart,
+          rowEnd,
+          compressors,
+        });
+        console.log(
+          `Filtering parquet file ${fileKey}, rows ${rowStart} to ${rowEnd}...`,
+        );
+        // not sure if that's faster than loop filter push, shouldn't matter
+        results = results.concat(
+          (data as PuzzleRecord[]).filter((p) => filterPuzzle(p, opts)),
+        );
+      }
     }
     console.log(`All parquet file read, sorting...`);
     if (opts.sortBy == "rating") {
