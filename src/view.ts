@@ -2,7 +2,7 @@ import { h, type VNode, type VNodeChildren } from "snabbdom";
 
 import { themeByCateg, type PuzzleTheme, type ThemeKey } from "./themes";
 import { toggleElm } from "./util";
-import { VERSION } from "./main";
+import { VERSION } from "./version";
 
 export class Status {
   private msg: string;
