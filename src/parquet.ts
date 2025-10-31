@@ -32,8 +32,8 @@ export type PuzzleRecord = {
 // FEN is not the start of the position, see `puzzleToPGN`, moves are in the PGN already
 export const puzzleRecordToStr = (p: PuzzleRecord): string[] => {
   return [
-    `PuzzleId: ${p.PuzzleId}`,
-    `Rainting: ${p.Rating}`,
+    `link: lichess.org/training/${p.PuzzleId}`,
+    `Raiting: ${p.Rating}`,
     `Popularity: ${p.Popularity}`,
     `Themes: ${p.Themes.join(", ")}`,
   ];

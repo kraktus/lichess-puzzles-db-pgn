@@ -342,6 +342,7 @@ class Controller {
                     downloadTextFile({
                       content: pgn,
                       filename: "lichess-puzzles.pgn",
+                      mimeType: "application/vnd.chess-pgn",
                     });
                     this.status.show = false;
                     this.redraw();

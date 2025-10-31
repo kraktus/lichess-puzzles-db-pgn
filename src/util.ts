@@ -48,9 +48,15 @@ export async function toBlob(
   return await response.blob();
 }
 
-export function downloadTextFile(opts: { filename: string; content: string }) {
-  const { filename, content } = opts;
-  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+export function downloadTextFile(opts: {
+  filename: string;
+  content: string;
+  mimeType?: string;
+}) {
+  const { filename, content, mimeType } = opts;
+  const blob = new Blob([content], {
+    type: mimeType ?? "text/plain;charset=utf-8",
+  });
   const url = URL.createObjectURL(blob);
 
   const a = document.createElement("a");
