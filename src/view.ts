@@ -2,6 +2,7 @@ import { h, type VNode, type VNodeChildren } from "snabbdom";
 
 import { themeByCateg, type PuzzleTheme, type ThemeKey } from "./themes";
 import { toggleElm } from "./util";
+import { VERSION } from "./main";
 
 export class Status {
   private msg: string;
@@ -146,6 +147,7 @@ export const footer = h(
         },
         "AGPL",
       ),
+      h("div", VERSION),
     ]),
     ,
   ],

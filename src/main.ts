@@ -39,7 +39,7 @@ const patch = init([
   eventListenersModule, // attaches event listeners
 ]);
 
-const VERSION = "v0.0.3";
+export const VERSION = "v0.0.3";
 console.log(VERSION);
 
 // whether each dropdown is opened
@@ -275,6 +275,7 @@ class Controller {
             "Advanced",
           ),
           h("ul.menu dropdown-content bg-base-100 w-full", [
+            h("li", VERSION),
             h(
               "li",
               h(
