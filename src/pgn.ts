@@ -11,7 +11,6 @@ import {
   isChildNode,
 } from "chessops/pgn";
 
-import { type PuzzleRecord, puzzleRecordToStr } from "./parquet";
 import { type ThemeKey } from "./themes";
 
 export const floorPuzzleRating = 400;
@@ -44,6 +43,26 @@ export const defaultWithoutFilters = () => {
     maxPuzzles: 10, // DEBUG
   };
 };
+
+export type PuzzleRecord = {
+  PuzzleId: string;
+  FEN: string;
+  Moves: string;
+  Rating: number;
+  Popularity: number;
+  Themes: string[];
+};
+
+// FEN is not the start of the position, see `puzzleToPGN`, moves are in the PGN already
+export const puzzleRecordToStr = (p: PuzzleRecord): string[] => {
+  return [
+    `link: lichess.org/training/${p.PuzzleId}`,
+    `Raiting: ${p.Rating}`,
+    `Popularity: ${p.Popularity}`,
+    `Themes: ${p.Themes.join(", ")}`,
+  ];
+};
+
 export const filterPuzzle = (
   p: PuzzleRecord,
   options: PgnFilerSortExportOptions,

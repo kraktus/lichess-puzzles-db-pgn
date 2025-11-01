@@ -11,38 +11,18 @@ import {
   type PgnFilerSortExportOptions,
   filterPuzzle,
   puzzleToPGN,
+  type PuzzleRecord,
 } from "./pgn";
 import { Status } from "./view";
 import { sortingIncludingBigInt } from "./util";
 import { log } from "./log";
+import { LIST_PARQUET_PATHS_KEY, PGN_EXPORT_KEY } from "./protocol";
+import PuzzleWorker from "./workers/puzzleWorker?worker";
 
 const REPO_ID = "datasets/Lichess/chess-puzzles";
 const REVISION = "main";
 
-// the IDb key where the list of parquet files paths are stored
-// those paths are themselves keys to retrieve the content
-const LIST_PARQUET_PATHS_KEY = "parquetPaths";
-
 const COLUMNS = ["PuzzleId", "FEN", "Moves", "Rating", "Popularity", "Themes"];
-
-export type PuzzleRecord = {
-  PuzzleId: string;
-  FEN: string;
-  Moves: string;
-  Rating: number;
-  Popularity: number;
-  Themes: string[];
-};
-
-// FEN is not the start of the position, see `puzzleToPGN`, moves are in the PGN already
-export const puzzleRecordToStr = (p: PuzzleRecord): string[] => {
-  return [
-    `link: lichess.org/training/${p.PuzzleId}`,
-    `Raiting: ${p.Rating}`,
-    `Popularity: ${p.Popularity}`,
-    `Themes: ${p.Themes.join(", ")}`,
-  ];
-};
 
 async function listParquetFilePaths(): Promise<string[]> {
   const parquetFiles: string[] = [];
