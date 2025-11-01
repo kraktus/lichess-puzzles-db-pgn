@@ -19,24 +19,6 @@ export function isTouchDevice() {
   return !hasMouse;
 }
 
-export async function toBase64(file: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result === "string") {
-        resolve(result.split(",")[1]); // Get only the base64 part
-      } else {
-        reject(new Error("Failed to read file as base64 string."));
-      }
-    };
-    reader.onerror = () => {
-      reject(new Error("Error reading file."));
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
 export const sortingIncludingBigInt = (
   a: bigint | number,
   b: bigint | number,
@@ -46,12 +28,47 @@ export const sortingIncludingBigInt = (
   return 0;
 };
 
-export async function toBlob(
-  base64: string,
-  mimeType: string = "application/octet-stream",
-): Promise<Blob> {
-  const response = await fetch(`data:${mimeType};base64,${base64}`);
-  return await response.blob();
+// https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream
+export function iteratorToStream(
+  iterator: AsyncGenerator<string, void, unknown>,
+) {
+  const encoder = new TextEncoder();
+  return new ReadableStream({
+    async pull(controller) {
+      const { value, done } = await iterator.next();
+
+      if (value) {
+        // Convert string to Uint8Array before enqueueing
+        controller.enqueue(encoder.encode(value));
+      }
+      if (done) {
+        controller.close();
+      }
+    },
+  });
+}
+
+export async function downloadStreamingTextFile(opts: {
+  filename: string;
+  iterator: AsyncGenerator<string, void, unknown>;
+  mimeType?: string;
+}) {
+  const { filename, iterator, mimeType } = opts;
+  const stream = iteratorToStream(iterator);
+  const response = new Response(stream, {
+    headers: { "Content-Type": "text/plain" },
+  });
+  const blob = await response.blob();
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+
+  URL.revokeObjectURL(url);
+
+  URL.revokeObjectURL(url);
 }
 
 export function downloadTextFile(opts: {

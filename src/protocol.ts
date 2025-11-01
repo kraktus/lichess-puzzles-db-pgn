@@ -8,7 +8,7 @@ import { type PgnFilerSortExportOptions } from "./pgn";
 // those paths are themselves keys to retrieve the content
 export const LIST_PARQUET_PATHS_KEY = "parquetPaths";
 
-export const PGN_EXPORT_KEY = "pgnExport";
+export const PGN_EXPORT_KEY = (chunkNo: number) => `pgnExport-${chunkNo}`;
 
 export interface SendWork {
   opts: PgnFilerSortExportOptions;

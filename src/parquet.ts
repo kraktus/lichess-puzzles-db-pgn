@@ -1,6 +1,6 @@
 import { listFiles, downloadFile } from "@huggingface/hub";
 import { Db, Store } from "./db";
-import { type PgnFilerSortExportOptions } from "./pgn";
+import { type PgnFilerSortExportOptions, type PuzzleRecord } from "./pgn";
 import { Status } from "./view";
 import { sortingIncludingBigInt } from "./util";
 import { log } from "./log";
@@ -92,7 +92,7 @@ export class Parquet {
     return diff > oneWeek;
   }
 
-  async doExportViaWorker(opts: PgnFilerSortExportOptions): Promise<string> {
+  async doExportViaWorker(opts: PgnFilerSortExportOptions): Promise<void> {
     if (this.downloadNeeded({ ifAlreadyWip: true })) {
       throw new Error("Parquet files need to be downloaded/refreshed first.");
     }
@@ -124,16 +124,9 @@ export class Parquet {
         }
       };
     });
-    const pgn = await this.store.get<string>(PGN_EXPORT_KEY);
-    if (pgn) {
-      return pgn;
-    } else {
-      throw new Error("No PGN export found in the database.");
-    }
   }
 
-  // return the PGN as string
-  async pgnPipeline(opts: PgnFilerSortExportOptions): Promise<string> {
+  async pgnPipeline(opts: PgnFilerSortExportOptions): Promise<void> {
     log.log(`Starting PGN export pipeline, ops ${JSON.stringify(opts)}`);
     // we only want to restart a download if not alreay wip
     if (this.downloadNeeded({ ifAlreadyWip: false })) {
@@ -141,7 +134,20 @@ export class Parquet {
     }
     this.status.update("Downloading the puzzle database...");
     await this.dl.resolveWHenFinished();
-    return await this.doExportViaWorker(opts);
+    await this.doExportViaWorker(opts);
+  }
+
+  // get the exported PGN chunks from the IDB as chunks of size `rowReadChunkSize`
+  async *exportPgnChunks(): AsyncGenerator<string, void, unknown> {
+    let chunkNo = 0;
+    while (true) {
+      const pgnChunk = await this.store.get<string>(PGN_EXPORT_KEY(chunkNo));
+      if (!pgnChunk) {
+        break;
+      }
+      yield pgnChunk;
+      chunkNo += 1;
+    }
   }
 
   // download the .parquet files from the dataset

@@ -9,6 +9,7 @@ import { h, type VNode } from "snabbdom";
 import {
   capitalizeFirstLetter,
   downloadTextFile,
+  downloadStreamingTextFile,
   isMobile,
   isTouchDevice,
 } from "./util";
@@ -358,15 +359,16 @@ class Controller {
                   this.status.show = true;
                   this.parquet
                     .pgnPipeline(this.themeCtrl.toOpts(this.opts))
-                    .then((pgn) => {
+                    .then(() => {
                       this.status.update("Preparing download...");
-                      downloadTextFile({
-                        content: pgn,
+                      downloadStreamingTextFile({
+                        iterator: this.parquet.exportPgnChunks(),
                         filename: "lichess-puzzles.pgn",
                         mimeType: "application/vnd.chess-pgn",
+                      }).then(() => {
+                        this.status.show = false;
+                        this.redraw();
                       });
-                      this.status.show = false;
-                      this.redraw();
                     });
                   this.redraw();
                 },
@@ -378,61 +380,6 @@ class Controller {
       footer,
     ]);
   }
-
-  // private selectThemeFilters(): VNode[] {
-  //   const includingWip = [...this.opts.themeFilters, this.wipFilter];
-  //   return includingWip.flatMap((themeFilter: Set<ThemeKey>, i) => {
-  //     const content = themesMenu(themeFilter, this.redraw.bind(this));
-  //     const onClose = () => {
-  //       this.opts.themeFilters = includingWip.filter(
-  //         (tf: Set<ThemeKey>) => tf.size > 0,
-  //       );
-  //       // if it's not empty, it has been added to the `opts.themeFilters`
-  //       // and we need to create a new empty one, to show the "+ add filter" button
-  //       if (this.wipFilter.size > 0) {
-  //         this.wipFilter = new Set();
-  //       }
-  //       this.redraw();
-  //     };
-  //     const button = this.displayAlreadyFilteredThemes(themeFilter);
-  //     const returnedNode = [makeModal(content, onClose, button)];
-  //     if (i < includingWip.length - 1) {
-  //       returnedNode.push(h("div.divider", "OR"));
-  //     }
-  //     return returnedNode;
-  //   });
-  // }
-
-  // private displayAlreadyFilteredThemes(
-  //   themes: Set<ThemeKey>,
-  // ): (openModal: OpenModal) => VNode {
-  //   return (openModal) =>
-  //     h(
-  //       "button.bg-base-200.rounded-box.p-10.w-full.flex.flex-wrap",
-  //       {
-  //         on: {
-  //           click: openModal,
-  //         },
-  //         class: {
-  //           "cursor-pointer": true,
-  //         },
-  //       },
-  //       themes.size > 0
-  //         ? Array.from(themes).flatMap((themeKey, i) => {
-  //             const badge = [
-  //               h("div.badge.badge-outline", puzzleThemes[themeKey].name),
-  //             ];
-  //             if (i < themes.size - 1) {
-  //               badge.push(h("span.font-bold.mx-2", "AND"));
-  //             }
-  //             return badge;
-  //           })
-  //         : h(
-  //             "div.badge.badge-dash badge-primary w-full p-4",
-  //             "+ filter new themes",
-  //           ),
-  //     );
-  // }
 
   private bind(f: (e: any) => void) {
     return (e: any) => {

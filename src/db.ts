@@ -4,7 +4,14 @@ const prefix = "lipuzzles-csv";
 //const objectStore = "db";
 
 // TODO, switch to `idb` package?
-type IDbValue = Blob | string | ArrayBuffer | Uint8Array | string[] | number;
+type IDbValue =
+  | Blob
+  | string
+  | ArrayBuffer
+  | Uint8Array
+  | string[]
+  | number
+  | object;
 
 const storeKeys = ["log", "parquet"] as const;
 type StoreKeys = (typeof storeKeys)[number];
@@ -91,7 +98,10 @@ export class Db {
 function promise<V>(f: () => IDBRequest) {
   return new Promise<V>((resolve, reject) => {
     const res = f();
-    res.onsuccess = (e: Event) => resolve((e.target as IDBRequest).result.data);
+    res.onsuccess = (e: Event) => {
+      const res = (e.target as IDBRequest).result;
+      resolve(res?.data);
+    };
     res.onerror = (e: Event) => reject((e.target as IDBRequest).result);
   });
 }
