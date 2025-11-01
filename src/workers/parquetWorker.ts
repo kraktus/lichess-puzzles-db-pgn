@@ -5,16 +5,19 @@ import {
 } from "hyparquet";
 import { compressors } from "hyparquet-compressors";
 
-import { type InitState, type MainMessage } from "./protocol";
+import {
+  type InitState,
+  type MainMessage,
+  LIST_PARQUET_PATHS_KEY,
+} from "../protocol";
 import {
   type PgnFilerSortExportOptions,
   filterPuzzle,
   puzzleToPGN,
   type PuzzleRecord,
   puzzleRecordToStr,
-} from "./pgn";
-import { sortingIncludingBigInt } from "./util";
-import { LIST_PARQUET_PATHS_KEY } from "./protocol";
+} from "../pgn";
+import { sortingIncludingBigInt } from "../util";
 
 const COLUMNS = ["PuzzleId", "FEN", "Moves", "Rating", "Popularity", "Themes"];
 
@@ -94,6 +97,14 @@ async function readFilterSortPuzzleDb(
     results = results.slice(0, opts.maxPuzzles);
   }
   return results;
+}
+
+function toPgn(
+  puzzles: PuzzleRecord[],
+  opts: PgnFilerSortExportOptions,
+): string {
+  update(`Exporting ${puzzles.length} puzzles to PGN...`);
+  return puzzles.map((p) => puzzleToPGN(p, opts)).join("\n\n");
 }
 
 self.onmessage = async (event: MessageEvent<MainMessage>) => {

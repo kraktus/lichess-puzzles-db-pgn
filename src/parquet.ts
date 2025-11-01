@@ -1,23 +1,15 @@
 import { listFiles, downloadFile } from "@huggingface/hub";
-import {
-  parquetReadObjects,
-  asyncBufferFromUrl,
-  parquetMetadata,
-} from "hyparquet";
-import { compressors } from "hyparquet-compressors";
-
 import { Db, Store } from "./db";
-import {
-  type PgnFilerSortExportOptions,
-  filterPuzzle,
-  puzzleToPGN,
-  type PuzzleRecord,
-} from "./pgn";
+import { type PgnFilerSortExportOptions } from "./pgn";
 import { Status } from "./view";
 import { sortingIncludingBigInt } from "./util";
 import { log } from "./log";
-import { LIST_PARQUET_PATHS_KEY, PGN_EXPORT_KEY } from "./protocol";
-import PuzzleWorker from "./workers/puzzleWorker?worker";
+import {
+  LIST_PARQUET_PATHS_KEY,
+  PGN_EXPORT_KEY,
+  type WorkerMessge,
+} from "./protocol";
+import ParquetWorker from "./workers/parquetWorker?worker";
 
 const REPO_ID = "datasets/Lichess/chess-puzzles";
 const REVISION = "main";
@@ -100,68 +92,44 @@ export class Parquet {
     return diff > oneWeek;
   }
 
-  async readFilterSortPuzzleDb(
-    opts: PgnFilerSortExportOptions,
-  ): Promise<PuzzleRecord[]> {
+  async doExportViaWorker(opts: PgnFilerSortExportOptions): Promise<string> {
     if (this.downloadNeeded({ ifAlreadyWip: true })) {
       throw new Error("Parquet files need to be downloaded/refreshed first.");
     }
-    const fileKeys = await this.store.get<string[]>(LIST_PARQUET_PATHS_KEY);
-    if (!fileKeys) {
-      throw new Error("No parquet file paths found in the database.");
+    const worker = new ParquetWorker();
+    worker.postMessage({
+      tpe: "init",
+      state: {
+        store: this.store,
+        rowReadChunkSize: this.rowReadChunkSize,
+      },
+    });
+    await new Promise<void>((resolve, reject) => {
+      worker.onmessage = (event: MessageEvent<WorkerMessge>) => {
+        switch (event.data.tpe) {
+          case "status":
+            this.status.update(event.data.status);
+            break;
+          case "log":
+            log.log(`Worker: ${event.data.log}`);
+            break;
+          case "jobDone":
+            this.status.update("Export job done.");
+            resolve();
+            break;
+          case "error":
+            this.status.update(`Error: ${event.data.error}`);
+            reject(new Error(event.data.error));
+            break;
+        }
+      };
+    });
+    const pgn = await this.store.get<string>(PGN_EXPORT_KEY);
+    if (pgn) {
+      return pgn;
+    } else {
+      throw new Error("No PGN export found in the database.");
     }
-    let results: PuzzleRecord[] = [];
-    for (const [i, fileKey] of fileKeys.entries()) {
-      log.log(`Retrieving parquet file ${fileKey}`);
-      const file = await this.store.get<ArrayBuffer>(fileKey);
-      if (!file) {
-        throw new Error(`Parquet file not found in DB: ${fileKey}`);
-      }
-      log.log(`Retrieved ${fileKey}`);
-      const metadata = parquetMetadata(file);
-      const numRows = Number(metadata.num_rows);
-      log.log(`Retrieved metadata for ${fileKey}, numRows: ${numRows}`);
-      for (
-        let rowStart = 0;
-        rowStart < numRows;
-        rowStart += this.rowReadChunkSize
-      ) {
-        const rowEnd = Math.min(rowStart + this.rowReadChunkSize, numRows);
-        this.status.update(
-          `Reading parquet file ${i + 1} of ${fileKeys.length}, rows ${rowStart}/${numRows}...`,
-        );
-        const data = await parquetReadObjects({
-          file,
-          columns: COLUMNS,
-          rowStart,
-          rowEnd,
-          compressors,
-        });
-        log.log(
-          `Filtering parquet file ${fileKey}, rows ${rowStart} to ${rowEnd}...`,
-        );
-        // not sure if that's faster than loop filter push, shouldn't matter
-        results = results.concat(
-          (data as PuzzleRecord[]).filter((p) => filterPuzzle(p, opts)),
-        );
-      }
-    }
-    log.log(`All parquet file read, sorting...`);
-    if (opts.sortBy == "rating") {
-      this.status.update(`Sorting by rating`);
-      results.sort((a, b) => sortingIncludingBigInt(a.Rating, b.Rating));
-    } else if (opts.sortBy == "popularity") {
-      this.status.update(`Sorting by popularity`);
-      results.sort((a, b) =>
-        sortingIncludingBigInt(b.Popularity, a.Popularity),
-      );
-    }
-
-    if (opts.maxPuzzles !== undefined) {
-      this.status.update(`Only keeping firsts ${opts.maxPuzzles} `);
-      results = results.slice(0, opts.maxPuzzles);
-    }
-    return results;
   }
 
   // return the PGN as string
@@ -173,10 +141,7 @@ export class Parquet {
     }
     this.status.update("Downloading the puzzle database...");
     await this.dl.resolveWHenFinished();
-    const puzzleRecords = await this.readFilterSortPuzzleDb(opts);
-
-    this.status.update(`Exporting ${puzzleRecords.length} puzzles to PGN...`);
-    return puzzleRecords.map((p) => puzzleToPGN(p, opts)).join("\n\n");
+    return await this.doExportViaWorker(opts);
   }
 
   // download the .parquet files from the dataset

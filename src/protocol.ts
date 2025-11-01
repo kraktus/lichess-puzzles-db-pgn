@@ -32,7 +32,7 @@ export type MainMessage =
     };
 
 // from Worker -> mainThread
-type WorkerMessge =
+export type WorkerMessge =
   | { tpe: "status"; status: string }
   | { tpe: "log"; log: string }
   | { tpe: "jobDone" } // result is saved in the IDB
