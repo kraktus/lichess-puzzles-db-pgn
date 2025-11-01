@@ -21,15 +21,18 @@ import {
   checkboxPGNInclude,
 } from "./view";
 import { log, addExceptionListeners } from "./log";
-import { makeModal, type OpenModal } from "./modal";
+import { type OpenModal, Modal } from "./modal";
 import { Db } from "./db";
 import { Parquet } from "./parquet";
 import {
   ceilingPuzzleRating,
   floorPuzzleRating,
   type SortBy,
-  PgnFilerSortExportOptions,
+  type PgnFilerSortExportOptions,
+  type WithoutFilters,
+  defaultWithoutFilters,
 } from "./pgn";
+import { ThemeCtrl } from "./themesCtrl";
 import { VERSION } from "./version";
 import { patch } from "./patch";
 
@@ -73,14 +76,19 @@ const rangeInput = (
     ]),
   ]);
 
+interface Modals {
+  log: Modal;
+}
+
 class Controller {
   private db: Db;
 
-  opts: PgnFilerSortExportOptions;
+  opts: WithoutFilters;
+  themeCtrl: ThemeCtrl;
   parquet: Parquet;
   dropdowns: DropdownsState;
-  wipFilter: Set<ThemeKey>;
   status: Status;
+  modals: Modals;
 
   old: HTMLElement | VNode;
 
@@ -89,7 +97,8 @@ class Controller {
 
     this.db = db;
     this.status = new Status(this.redraw.bind(this));
-    this.opts = new PgnFilerSortExportOptions();
+    this.opts = defaultWithoutFilters();
+    this.themeCtrl = new ThemeCtrl(this.redraw.bind(this));
     this.parquet = new Parquet(
       this.db,
       this.status,
@@ -101,8 +110,10 @@ class Controller {
       sortBy: false,
       exportOptions: true,
     };
-    // the empty set allows to have an "add new filter" button
-    this.wipFilter = new Set();
+
+    this.modals = {
+      log: new Modal(this.redraw.bind(this)),
+    };
   }
   redraw() {
     this.old = patch(this.old, this.view());
@@ -201,7 +212,7 @@ class Controller {
             : null,
           // Themes
           h("label.label", h("span.label-text", "Filter by themes")),
-          ...this.selectThemeFilters(),
+          ...this.themeCtrl.view(),
           // Max Puzzles
           h("div", [
             h(
@@ -314,7 +325,7 @@ class Controller {
               "li",
               h("div", [
                 h("div", h("label.label", h("span.label-text", "Show logs"))),
-                makeModal(() =>
+                this.modals.log.view(() =>
                   h("div", [
                     `Browser: ${navigator.userAgent}\n` +
                       `Cores: ${navigator.hardwareConcurrency}, ` +
@@ -324,13 +335,11 @@ class Controller {
                         ? "Extension: Lichess Tools, "
                         : "") +
                       `Browser lang: ${navigator.language}, `,
-                    ...log.cachedGet().map((line) => {
-                      console.log("line", line);
-                      return h(
-                        "pre.whitespace-pre-wrap.break-words.text-sm",
-                        line,
-                      );
-                    }),
+                    ...log
+                      .cachedGet()
+                      .map((line) =>
+                        h("pre.whitespace-pre-wrap.break-words.text-sm", line),
+                      ),
                   ]),
                 ),
               ]),
@@ -347,16 +356,18 @@ class Controller {
               on: {
                 click: () => {
                   this.status.show = true;
-                  this.parquet.pgnPipeline(this.opts).then((pgn) => {
-                    this.status.update("Preparing download...");
-                    downloadTextFile({
-                      content: pgn,
-                      filename: "lichess-puzzles.pgn",
-                      mimeType: "application/vnd.chess-pgn",
+                  this.parquet
+                    .pgnPipeline(this.themeCtrl.toOpts(this.opts))
+                    .then((pgn) => {
+                      this.status.update("Preparing download...");
+                      downloadTextFile({
+                        content: pgn,
+                        filename: "lichess-puzzles.pgn",
+                        mimeType: "application/vnd.chess-pgn",
+                      });
+                      this.status.show = false;
+                      this.redraw();
                     });
-                    this.status.show = false;
-                    this.redraw();
-                  });
                   this.redraw();
                 },
               },
@@ -368,61 +379,60 @@ class Controller {
     ]);
   }
 
-  private selectThemeFilters(): VNode[] {
-    const includingWip = [...this.opts.themeFilters, this.wipFilter];
-    return includingWip.flatMap((themeFilter: Set<ThemeKey>, i) => {
-      // .bind(this) might not been needed but JS is such a pain I prefer to cover for it
-      const content = themesMenu(themeFilter, this.redraw.bind(this));
-      const onClose = () => {
-        this.opts.themeFilters = includingWip.filter(
-          (tf: Set<ThemeKey>) => tf.size > 0,
-        );
-        // if it's not empty, it has been added to the `opts.themeFilters`
-        // and we need to create a new empty one, to show the "+ add filter" button
-        if (this.wipFilter.size > 0) {
-          this.wipFilter = new Set();
-        }
-        this.redraw();
-      };
-      const button = this.displayAlreadyFilteredThemes(themeFilter);
-      const returnedNode = [makeModal(content, onClose, button)];
-      if (i < includingWip.length - 1) {
-        returnedNode.push(h("div.divider", "OR"));
-      }
-      return returnedNode;
-    });
-  }
+  // private selectThemeFilters(): VNode[] {
+  //   const includingWip = [...this.opts.themeFilters, this.wipFilter];
+  //   return includingWip.flatMap((themeFilter: Set<ThemeKey>, i) => {
+  //     const content = themesMenu(themeFilter, this.redraw.bind(this));
+  //     const onClose = () => {
+  //       this.opts.themeFilters = includingWip.filter(
+  //         (tf: Set<ThemeKey>) => tf.size > 0,
+  //       );
+  //       // if it's not empty, it has been added to the `opts.themeFilters`
+  //       // and we need to create a new empty one, to show the "+ add filter" button
+  //       if (this.wipFilter.size > 0) {
+  //         this.wipFilter = new Set();
+  //       }
+  //       this.redraw();
+  //     };
+  //     const button = this.displayAlreadyFilteredThemes(themeFilter);
+  //     const returnedNode = [makeModal(content, onClose, button)];
+  //     if (i < includingWip.length - 1) {
+  //       returnedNode.push(h("div.divider", "OR"));
+  //     }
+  //     return returnedNode;
+  //   });
+  // }
 
-  private displayAlreadyFilteredThemes(
-    themes: Set<ThemeKey>,
-  ): (openModal: OpenModal) => VNode {
-    return (openModal) =>
-      h(
-        "button.bg-base-200.rounded-box.p-10.w-full.flex.flex-wrap",
-        {
-          on: {
-            click: openModal,
-          },
-          class: {
-            "cursor-pointer": true,
-          },
-        },
-        themes.size > 0
-          ? Array.from(themes).flatMap((themeKey, i) => {
-              const badge = [
-                h("div.badge.badge-outline", puzzleThemes[themeKey].name),
-              ];
-              if (i < themes.size - 1) {
-                badge.push(h("span.font-bold.mx-2", "AND"));
-              }
-              return badge;
-            })
-          : h(
-              "div.badge.badge-dash badge-primary w-full p-4",
-              "+ filter new themes",
-            ),
-      );
-  }
+  // private displayAlreadyFilteredThemes(
+  //   themes: Set<ThemeKey>,
+  // ): (openModal: OpenModal) => VNode {
+  //   return (openModal) =>
+  //     h(
+  //       "button.bg-base-200.rounded-box.p-10.w-full.flex.flex-wrap",
+  //       {
+  //         on: {
+  //           click: openModal,
+  //         },
+  //         class: {
+  //           "cursor-pointer": true,
+  //         },
+  //       },
+  //       themes.size > 0
+  //         ? Array.from(themes).flatMap((themeKey, i) => {
+  //             const badge = [
+  //               h("div.badge.badge-outline", puzzleThemes[themeKey].name),
+  //             ];
+  //             if (i < themes.size - 1) {
+  //               badge.push(h("span.font-bold.mx-2", "AND"));
+  //             }
+  //             return badge;
+  //           })
+  //         : h(
+  //             "div.badge.badge-dash badge-primary w-full p-4",
+  //             "+ filter new themes",
+  //           ),
+  //     );
+  // }
 
   private bind(f: (e: any) => void) {
     return (e: any) => {

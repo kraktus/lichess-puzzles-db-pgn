@@ -19,7 +19,7 @@ export const ceilingPuzzleRating = 4000; // TODO check that
 
 export type SortBy = "rating" | "popularity";
 
-export class PgnFilerSortExportOptions {
+export interface PgnFilerSortExportOptions {
   // first level of sets for OR within a group, second set for AND between groups
   themeFilters: Set<ThemeKey>[];
   minRating: number;
@@ -31,17 +31,19 @@ export class PgnFilerSortExportOptions {
 
   includeTags: boolean;
   includeComments: boolean;
-
-  constructor() {
-    // DEBUG
-    this.themeFilters = [new Set(["opening"])];
-    this.minRating = floorPuzzleRating;
-    this.maxRating = ceilingPuzzleRating;
-    this.includeTags = true;
-    this.includeComments = false;
-    this.maxPuzzles = 10; // DEBUG
-  }
 }
+// theme filters moved to separate interface `ThemesCtrl`
+export type WithoutFilters = Omit<PgnFilerSortExportOptions, "themeFilters">;
+
+export const defaultWithoutFilters = () => {
+  return {
+    minRating: floorPuzzleRating,
+    maxRating: ceilingPuzzleRating,
+    includeTags: true,
+    includeComments: false,
+    maxPuzzles: 10, // DEBUG
+  };
+};
 export const filterPuzzle = (
   p: PuzzleRecord,
   options: PgnFilerSortExportOptions,

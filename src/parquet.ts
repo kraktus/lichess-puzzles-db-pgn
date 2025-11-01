@@ -7,7 +7,11 @@ import {
 import { compressors } from "hyparquet-compressors";
 
 import { Db, Store } from "./db";
-import { PgnFilerSortExportOptions, filterPuzzle, puzzleToPGN } from "./pgn";
+import {
+  type PgnFilerSortExportOptions,
+  filterPuzzle,
+  puzzleToPGN,
+} from "./pgn";
 import { Status } from "./view";
 import { sortingIncludingBigInt } from "./util";
 import { log } from "./log";
