@@ -83,9 +83,9 @@ export function puzzleToPGN(
 
   if (options.includeTags) {
     game.headers.set("PuzzleId", puzzle.PuzzleId);
-    game.headers.set("Rating", String(puzzle.Rating));
-    game.headers.set("Popularity", String(puzzle.Popularity));
-    game.headers.set("Themes", puzzle.Themes.join(", "));
+    game.headers.set("PuzzleRating", String(puzzle.Rating));
+    game.headers.set("PuzzlePopularity", String(puzzle.Popularity));
+    game.headers.set("PuzzleThemes", puzzle.Themes.join(", "));
   }
 
   const sans = moves.map((moveStr) => {

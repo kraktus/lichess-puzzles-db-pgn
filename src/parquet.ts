@@ -123,16 +123,14 @@ export class Parquet {
     if (this.downloadNeeded({ ifAlreadyWip: true })) {
       throw new Error("Parquet files need to be downloaded/refreshed first.");
     }
-    const fileKeys = await this.store.getIndexedDb<string[]>(
-      LIST_PARQUET_PATHS_KEY,
-    );
+    const fileKeys = await this.store.get<string[]>(LIST_PARQUET_PATHS_KEY);
     if (!fileKeys) {
       throw new Error("No parquet file paths found in the database.");
     }
     let results: PuzzleRecord[] = [];
     for (const [i, fileKey] of fileKeys.entries()) {
       console.log(`Retrieving parquet file ${fileKey}`);
-      const file = await this.store.getIndexedDb<ArrayBuffer>(fileKey);
+      const file = await this.store.get<ArrayBuffer>(fileKey);
       if (!file) {
         throw new Error(`Parquet file not found in DB: ${fileKey}`);
       }
@@ -204,7 +202,7 @@ export class Parquet {
     this.dl.start(
       new Promise(async (dlFinished) => {
         const parquetPaths = await listParquetFilePaths();
-        await this.store.setIndexedDb(LIST_PARQUET_PATHS_KEY, parquetPaths);
+        await this.store.put(LIST_PARQUET_PATHS_KEY, parquetPaths);
         for (const parquetPath of parquetPaths) {
           await this.downloadAndStore(parquetPath);
         }
@@ -229,6 +227,6 @@ export class Parquet {
       throw new Error(`Failed to download file: ${filePath}`);
     }
     const buf = await file.arrayBuffer();
-    await this.store.setIndexedDb(filePath, buf);
+    await this.store.put(filePath, buf);
   }
 }

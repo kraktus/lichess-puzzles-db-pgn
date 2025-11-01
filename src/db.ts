@@ -2,7 +2,7 @@ const prefix = "lipuzzles-csv";
 //const objectStore = "db";
 
 // TODO, switch to `idb` package?
-type IDbValue = Blob | string | ArrayBuffer | Uint8Array | string[];
+type IDbValue = Blob | string | ArrayBuffer | Uint8Array | string[] | number;
 
 const storeKeys = ["log", "parquet"] as const;
 type StoreKeys = (typeof storeKeys)[number];
@@ -89,6 +89,14 @@ export class Db {
   }
 }
 
+function promise<V>(f: () => IDBRequest) {
+  return new Promise<V>((resolve, reject) => {
+    const res = f();
+    res.onsuccess = (e: Event) => resolve((e.target as IDBRequest).result);
+    res.onerror = (e: Event) => reject((e.target as IDBRequest).result);
+  });
+}
+
 // IDB store
 export class Store {
   private db: IDBDatabase;
@@ -99,35 +107,34 @@ export class Store {
     this.storeKey = storeKey;
   }
 
-  async getIndexedDb<T extends IDbValue>(key: string): Promise<T | null> {
-    const tx = this.db.transaction(this.storeKey, "readonly");
-    const store = tx.objectStore(this.storeKey);
-    const req = store.get(key);
-    return new Promise<T | null>((resolve, reject) => {
-      req.onsuccess = () => {
-        if (req.result) {
-          resolve(req.result.data);
-        } else {
-          resolve(null);
-        }
-      };
-      req.onerror = (event: any) =>
-        reject(new Error(`Failed to get IndexedDB item: ${event}`));
-    });
+  objectStore = (mode: IDBTransactionMode) => {
+    return this.db.transaction(this.storeKey, mode).objectStore(this.storeKey);
+  };
+
+  async get<T extends IDbValue>(key: IDBValidKey): Promise<T | null> {
+    return promise(() => this.objectStore("readonly").get(key));
   }
 
   // ArrayBuffer, Blob, File, and typed arrays like Uint8Array
-  async setIndexedDb(key: string, value: IDbValue): Promise<void> {
-    const tx = this.db.transaction(this.storeKey, "readwrite");
-    const store = tx.objectStore(this.storeKey);
-    const req = store.put({ id: key, data: value });
-    return new Promise<void>((resolve, reject) => {
-      req.onsuccess = () => {
-        console.log(`IndexedDB set successful: ${key}`);
-        resolve();
-      };
-      req.onerror = (event: any) =>
-        reject(new Error(`Failed to set IndexedDB item: ${event}`));
-    });
+  async put(key: IDbValue, value: IDbValue): Promise<void> {
+    return promise(() =>
+      this.objectStore("readwrite").put({ id: key, data: value }),
+    );
+  }
+
+  async clear(): Promise<void> {
+    return promise(() => this.objectStore("readwrite").clear());
+  }
+
+  async list(): Promise<IDBValidKey[]> {
+    return promise(() => this.objectStore("readonly").getAllKeys());
+  }
+
+  async getMany<T extends IDbValue>(keys: IDBKeyRange): Promise<(T | null)[]> {
+    return promise(() => this.objectStore("readonly").getAll(keys));
+  }
+
+  async remove(key: IDBValidKey | IDBKeyRange): Promise<void> {
+    return promise(() => this.objectStore("readwrite").delete(key));
   }
 }
