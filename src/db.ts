@@ -97,7 +97,7 @@ function promise<V>(f: () => IDBRequest) {
   });
 }
 
-// IDB store
+// IDB store, based on lila/ui/lib/src/objectStorage.ts, AGPL
 export class Store {
   private db: IDBDatabase;
   private storeKey: StoreKeys;
@@ -130,7 +130,7 @@ export class Store {
     return promise(() => this.objectStore("readonly").getAllKeys());
   }
 
-  async getMany<T extends IDbValue>(keys: IDBKeyRange): Promise<(T | null)[]> {
+  async getMany<T extends IDbValue>(keys?: IDBKeyRange): Promise<(T | null)[]> {
     return promise(() => this.objectStore("readonly").getAll(keys));
   }
 

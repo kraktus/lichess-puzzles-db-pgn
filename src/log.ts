@@ -1,0 +1,105 @@
+import { Db, Store } from "./db";
+
+// adapated from lila/ui/lib/src/permalog.ts AGPL too
+
+interface PermaLog {
+  init(db: Db): void;
+  log(...args: any[]): void;
+  info(...args: any[]): void;
+  warn(...args: any[]): void;
+  error(...args: any[]): void;
+  clear(): Promise<void>;
+  // get(): Promise<string>;
+}
+
+export const log: PermaLog = makeLog(100 /* windowSize */);
+
+export function makeLog(windowSize: number): PermaLog {
+  let resolveReady: (res: Store) => void;
+  let lastKey = 0;
+  let drift = 0.001;
+
+  const ready = new Promise<Store>((resolve) => {
+    resolveReady = resolve;
+  });
+
+  (Error.prototype as any).toJSON ??= function () {
+    return { [this.name]: this.message, stack: this.stack };
+  };
+
+  function stringify(val: any): string {
+    return !val || typeof val === "string" ? String(val) : JSON.stringify(val);
+  }
+
+  const writeMsg = (
+    level: "log" | "info" | "warn" | "error",
+    ...args: any[]
+  ): void => {
+    switch (level) {
+      case "log":
+      case "info":
+        return console.log(...args);
+      case "warn":
+        return console.warn(...args);
+      case "error":
+        return console.error(...args);
+    }
+    const msg = args.map(stringify).join(" ");
+    let nextKey = Date.now();
+    if (nextKey === lastKey) {
+      nextKey += drift;
+      drift += 0.001;
+    } else {
+      drift = 0.001;
+      lastKey = nextKey;
+    }
+    ready.then((store) => store.put(nextKey, msg)).catch(console.error);
+  };
+
+  const init = (db: Db) => {
+    resolveReady(db.stores.log);
+  };
+
+  const log = (...args: any[]) => writeMsg("log", ...args);
+  const info = (...args: any[]) => writeMsg("info", ...args);
+  const warn = (...args: any[]) => writeMsg("warn", ...args);
+  const error = (...args: any[]) => writeMsg("error", ...args);
+
+  const clear = async () => {
+    const store = await ready;
+    await store.clear();
+    lastKey = 0;
+  };
+
+  const get = async (): Promise<string> => {
+    const store = await ready;
+    try {
+      const keys = await store.list();
+      if (windowSize >= 0 && keys.length > windowSize)
+        await store.remove(
+          IDBKeyRange.upperBound(keys[keys.length - windowSize], true),
+        );
+    } catch (e) {
+      console.error(e);
+      store.clear();
+      // window.indexedDB.deleteDatabase(dbInfo.db ?? dbInfo.store);
+      return "";
+    }
+    const [keys, vals] = await Promise.all([store.list(), store.getMany()]);
+    return (keys as number[])
+      .map(
+        (k, i) =>
+          `${new Date(k).toISOString().replace(/[TZ]/g, " ")}${vals[i]}`,
+      )
+      .join("\n");
+  };
+
+  return {
+    init,
+    log,
+    info,
+    warn,
+    error,
+    clear,
+  };
+}
