@@ -9,7 +9,7 @@ type StoreKeys = (typeof storeKeys)[number];
 
 export class Db {
   private inner: IDBDatabase;
-  private stores: Record<StoreKeys, Store>;
+  stores: Record<StoreKeys, Store>;
 
   constructor(inner: IDBDatabase, stores: Record<StoreKeys, Store>) {
     this.inner = inner;
@@ -78,20 +78,9 @@ export class Db {
     });
   }
 
-  async getIndexedDb<T extends IDbValue>(key: string): Promise<T | null> {
-    // DEBUG
-    return Promise.resolve(null);
-  }
-
   getLocalStorage(key: string): string | null {
     console.log(`Getting from localStorage: ${key}`);
     return window.localStorage.getItem(`${prefix}-${key}`);
-  }
-
-  // ArrayBuffer, Blob, File, and typed arrays like Uint8Array
-  async setIndexedDb(key: string, value: IDbValue): Promise<void> {
-    // DEBUG
-    return Promise.resolve();
   }
 
   setLocalSorage(key: string, value: string) {

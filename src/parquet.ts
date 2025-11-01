@@ -6,7 +6,7 @@ import {
 } from "hyparquet";
 import { compressors } from "hyparquet-compressors";
 
-import { Db } from "./db";
+import { Db, Store } from "./db";
 import { PgnFilerSortExportOptions, filterPuzzle, puzzleToPGN } from "./pgn";
 import { Status } from "./view";
 import { sortingIncludingBigInt } from "./util";
@@ -86,6 +86,7 @@ class Dl {
 
 export class Parquet {
   private db: Db;
+  private store: Store;
   // whether download is in progress or not
   private dl: Dl;
   private lastUpdated?: Date;
@@ -94,6 +95,7 @@ export class Parquet {
 
   constructor(db: Db, status: Status, rowReadChunkSize: number) {
     this.db = db;
+    this.store = db.stores.parquet;
     const retrieved = this.db.getLocalStorage("last-updated");
     this.lastUpdated = retrieved ? new Date(retrieved) : undefined;
     if (this.lastUpdated) {
@@ -121,7 +123,7 @@ export class Parquet {
     if (this.downloadNeeded({ ifAlreadyWip: true })) {
       throw new Error("Parquet files need to be downloaded/refreshed first.");
     }
-    const fileKeys = await this.db.getIndexedDb<string[]>(
+    const fileKeys = await this.store.getIndexedDb<string[]>(
       LIST_PARQUET_PATHS_KEY,
     );
     if (!fileKeys) {
@@ -130,7 +132,7 @@ export class Parquet {
     let results: PuzzleRecord[] = [];
     for (const [i, fileKey] of fileKeys.entries()) {
       console.log(`Retrieving parquet file ${fileKey}`);
-      const file = await this.db.getIndexedDb<ArrayBuffer>(fileKey);
+      const file = await this.store.getIndexedDb<ArrayBuffer>(fileKey);
       if (!file) {
         throw new Error(`Parquet file not found in DB: ${fileKey}`);
       }
@@ -202,7 +204,7 @@ export class Parquet {
     this.dl.start(
       new Promise(async (dlFinished) => {
         const parquetPaths = await listParquetFilePaths();
-        await this.db.setIndexedDb(LIST_PARQUET_PATHS_KEY, parquetPaths);
+        await this.store.setIndexedDb(LIST_PARQUET_PATHS_KEY, parquetPaths);
         for (const parquetPath of parquetPaths) {
           await this.downloadAndStore(parquetPath);
         }
@@ -227,6 +229,6 @@ export class Parquet {
       throw new Error(`Failed to download file: ${filePath}`);
     }
     const buf = await file.arrayBuffer();
-    await this.db.setIndexedDb(filePath, buf);
+    await this.store.setIndexedDb(filePath, buf);
   }
 }
