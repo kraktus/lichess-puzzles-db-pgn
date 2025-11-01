@@ -6,9 +6,9 @@ import {
 import { compressors } from "hyparquet-compressors";
 
 import {
-  type InitState,
   type MainMessage,
   LIST_PARQUET_PATHS_KEY,
+  PGN_EXPORT_KEY,
 } from "../protocol";
 import {
   type PgnFilerSortExportOptions,
@@ -18,10 +18,18 @@ import {
   puzzleRecordToStr,
 } from "../pgn";
 import { sortingIncludingBigInt } from "../util";
+import { Db, type Store } from "../db";
 
 const COLUMNS = ["PuzzleId", "FEN", "Moves", "Rating", "Popularity", "Themes"];
 
-let state: InitState;
+interface State {
+  store: Store;
+}
+let statePromise = Db.open().then((db) => {
+  return {
+    store: db.stores.parquet,
+  };
+});
 
 const update = (msg: string) => {
   self.postMessage({
@@ -39,15 +47,15 @@ const log = (msg: string) => {
 
 async function readFilterSortPuzzleDb(
   opts: PgnFilerSortExportOptions,
+  rowReadChunkSize: number,
 ): Promise<PuzzleRecord[]> {
-  if (!state) {
-    throw new Error("Sent work before initialization");
-  }
+  const state = await statePromise;
   const fileKeys = await state.store.get<string[]>(LIST_PARQUET_PATHS_KEY);
   if (!fileKeys) {
     throw new Error("No parquet file paths found in the database.");
   }
   let results: PuzzleRecord[] = [];
+  console.log("WORKER", fileKeys);
   for (const [i, fileKey] of fileKeys.entries()) {
     log(`Retrieving parquet file ${fileKey}`);
     const file = await state.store.get<ArrayBuffer>(fileKey);
@@ -58,12 +66,8 @@ async function readFilterSortPuzzleDb(
     const metadata = parquetMetadata(file);
     const numRows = Number(metadata.num_rows);
     log(`Retrieved metadata for ${fileKey}, numRows: ${numRows}`);
-    for (
-      let rowStart = 0;
-      rowStart < numRows;
-      rowStart += state.rowReadChunkSize
-    ) {
-      const rowEnd = Math.min(rowStart + state.rowReadChunkSize, numRows);
+    for (let rowStart = 0; rowStart < numRows; rowStart += rowReadChunkSize) {
+      const rowEnd = Math.min(rowStart + rowReadChunkSize, numRows);
       update(
         `Reading parquet file ${i + 1} of ${fileKeys.length}, rows ${rowStart}/${numRows}...`,
       );
@@ -110,8 +114,15 @@ function toPgn(
 self.onmessage = async (event: MessageEvent<MainMessage>) => {
   const msg = event.data;
   switch (msg.tpe) {
-    case "init":
-      state = msg.state;
+    case "sendWork":
+      const puzzles = await readFilterSortPuzzleDb(
+        msg.work.opts,
+        msg.work.rowReadChunkSize,
+      );
+      const pgn = toPgn(puzzles, msg.work.opts);
+      const state = await statePromise;
+      await state.store.put(PGN_EXPORT_KEY, pgn);
+      self.postMessage({ tpe: "workDone" });
       break;
   }
 };

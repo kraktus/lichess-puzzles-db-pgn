@@ -10,30 +10,20 @@ export const LIST_PARQUET_PATHS_KEY = "parquetPaths";
 
 export const PGN_EXPORT_KEY = "pgnExport";
 
-export interface InitState {
-  store: Store;
+export interface SendWork {
+  opts: PgnFilerSortExportOptions;
   rowReadChunkSize: number;
 }
 
-export interface SendWork {
-  parquetStoreKey: string;
-  opts: PgnFilerSortExportOptions;
-}
-
 // from mainThread -> Worker
-export type MainMessage =
-  | {
-      tpe: "init";
-      state: InitState;
-    }
-  | {
-      tpe: "sendWork";
-      work: SendWork;
-    };
+export type MainMessage = {
+  tpe: "sendWork";
+  work: SendWork;
+};
 
 // from Worker -> mainThread
 export type WorkerMessge =
   | { tpe: "status"; status: string }
   | { tpe: "log"; log: string }
-  | { tpe: "jobDone" } // result is saved in the IDB
+  | { tpe: "workDone" } // result is saved in the IDB
   | { tpe: "error"; error: string };

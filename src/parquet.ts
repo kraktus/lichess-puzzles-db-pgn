@@ -98,9 +98,9 @@ export class Parquet {
     }
     const worker = new ParquetWorker();
     worker.postMessage({
-      tpe: "init",
-      state: {
-        store: this.store,
+      tpe: "sendWork",
+      work: {
+        opts: opts,
         rowReadChunkSize: this.rowReadChunkSize,
       },
     });
@@ -113,8 +113,8 @@ export class Parquet {
           case "log":
             log.log(`Worker: ${event.data.log}`);
             break;
-          case "jobDone":
-            this.status.update("Export job done.");
+          case "workDone":
+            this.status.update("Export work done.");
             resolve();
             break;
           case "error":

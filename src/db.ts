@@ -91,7 +91,7 @@ export class Db {
 function promise<V>(f: () => IDBRequest) {
   return new Promise<V>((resolve, reject) => {
     const res = f();
-    res.onsuccess = (e: Event) => resolve((e.target as IDBRequest).result);
+    res.onsuccess = (e: Event) => resolve((e.target as IDBRequest).result.data);
     res.onerror = (e: Event) => reject((e.target as IDBRequest).result);
   });
 }
@@ -111,6 +111,7 @@ export class Store {
   };
 
   async get<T extends IDbValue>(key: IDBValidKey): Promise<T | null> {
+    // @ts-ignore
     return promise(() => this.objectStore("readonly").get(key));
   }
 

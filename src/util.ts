@@ -13,9 +13,8 @@ export function isMobile() {
   );
 }
 
-const hasMouse = window.matchMedia(
-  "(hover: hover) and (pointer: fine)",
-).matches;
+const hasMouse = () =>
+  window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 export function isTouchDevice() {
   return !hasMouse;
 }
