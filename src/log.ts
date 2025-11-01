@@ -1,6 +1,7 @@
 import { Db, Store } from "./db";
 
-// adapated from lila/ui/lib/src/permalog.ts AGPL too
+// adapated from lila/ui/lib/src/permalog.ts and
+// lila/ui/site/src/unhandledError.ts both AGPL
 
 interface PermaLog {
   init(db: Db): void;
@@ -9,10 +10,28 @@ interface PermaLog {
   warn(...args: any[]): void;
   error(...args: any[]): void;
   clear(): Promise<void>;
-  // get(): Promise<string>;
+  get(): Promise<string>;
 }
 
-export const log: PermaLog = makeLog(100 /* windowSize */);
+export const log: PermaLog = makeLog(100);
+
+export function addExceptionListeners() {
+  window.addEventListener("error", async (e) => {
+    const loc = e.filename ? ` - (${e.filename}:${e.lineno}:${e.colno})` : "";
+    log.error(`${e.message}${loc}\n${e.error?.stack ?? ""}`.trim());
+  });
+
+  window.addEventListener("unhandledrejection", async (e) => {
+    let reason = e.reason;
+    if (typeof reason !== "string")
+      try {
+        reason = JSON.stringify(e.reason);
+      } catch (_) {
+        reason = "unhandled rejection, reason not a string";
+      }
+    log.error(`${reason}`);
+  });
+}
 
 export function makeLog(windowSize: number): PermaLog {
   let resolveReady: (res: Store) => void;
@@ -101,5 +120,6 @@ export function makeLog(windowSize: number): PermaLog {
     warn,
     error,
     clear,
+    get,
   };
 }

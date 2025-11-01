@@ -10,6 +10,7 @@ import { Db, Store } from "./db";
 import { PgnFilerSortExportOptions, filterPuzzle, puzzleToPGN } from "./pgn";
 import { Status } from "./view";
 import { sortingIncludingBigInt } from "./util";
+import { log } from "./log";
 
 const REPO_ID = "datasets/Lichess/chess-puzzles";
 const REVISION = "main";
@@ -41,18 +42,18 @@ export const puzzleRecordToStr = (p: PuzzleRecord): string[] => {
 
 async function listParquetFilePaths(): Promise<string[]> {
   const parquetFiles: string[] = [];
-  console.log("Listing parquet files...");
+  log.log("Listing parquet files...");
   for await (const fileInfo of listFiles({
     repo: REPO_ID,
     revision: REVISION,
     path: "data",
   })) {
     if (fileInfo.type === "file" && fileInfo.path.endsWith(".parquet")) {
-      console.log(`Found parquet path in files: ${fileInfo.path}`);
+      log.log(`Found parquet path in files: ${fileInfo.path}`);
       parquetFiles.push(fileInfo.path);
     }
   }
-  console.log(`Total parquet files found: ${parquetFiles.length}`);
+  log.log(`Total parquet files found: ${parquetFiles.length}`);
   return parquetFiles;
 }
 
@@ -99,9 +100,7 @@ export class Parquet {
     const retrieved = this.db.getLocalStorage("last-updated");
     this.lastUpdated = retrieved ? new Date(retrieved) : undefined;
     if (this.lastUpdated) {
-      console.log(
-        `Puzzle CSV last retrieved: ${this.lastUpdated.toISOString()}`,
-      );
+      log.log(`Puzzle CSV last retrieved: ${this.lastUpdated.toISOString()}`);
     }
     this.dl = new Dl();
     this.status = status;
@@ -129,15 +128,15 @@ export class Parquet {
     }
     let results: PuzzleRecord[] = [];
     for (const [i, fileKey] of fileKeys.entries()) {
-      console.log(`Retrieving parquet file ${fileKey}`);
+      log.log(`Retrieving parquet file ${fileKey}`);
       const file = await this.store.get<ArrayBuffer>(fileKey);
       if (!file) {
         throw new Error(`Parquet file not found in DB: ${fileKey}`);
       }
-      console.log(`Retrieved ${fileKey}`);
+      log.log(`Retrieved ${fileKey}`);
       const metadata = parquetMetadata(file);
       const numRows = Number(metadata.num_rows);
-      console.log(`Retrieved metadata for ${fileKey}, numRows: ${numRows}`);
+      log.log(`Retrieved metadata for ${fileKey}, numRows: ${numRows}`);
       for (
         let rowStart = 0;
         rowStart < numRows;
@@ -154,7 +153,7 @@ export class Parquet {
           rowEnd,
           compressors,
         });
-        console.log(
+        log.log(
           `Filtering parquet file ${fileKey}, rows ${rowStart} to ${rowEnd}...`,
         );
         // not sure if that's faster than loop filter push, shouldn't matter
@@ -163,7 +162,7 @@ export class Parquet {
         );
       }
     }
-    console.log(`All parquet file read, sorting...`);
+    log.log(`All parquet file read, sorting...`);
     if (opts.sortBy == "rating") {
       this.status.update(`Sorting by rating`);
       results.sort((a, b) => sortingIncludingBigInt(a.Rating, b.Rating));
@@ -183,7 +182,7 @@ export class Parquet {
 
   // return the PGN as string
   async pgnPipeline(opts: PgnFilerSortExportOptions): Promise<string> {
-    console.log(`Starting PGN export pipeline, ops ${JSON.stringify(opts)}`);
+    log.log(`Starting PGN export pipeline, ops ${JSON.stringify(opts)}`);
     // we only want to restart a download if not alreay wip
     if (this.downloadNeeded({ ifAlreadyWip: false })) {
       await this.download();
@@ -214,7 +213,7 @@ export class Parquet {
   }
 
   private async downloadAndStore(filePath: string) {
-    console.log(`Downloading ${filePath} ...`);
+    log.log(`Downloading ${filePath} ...`);
     const file = await downloadFile({
       repo: REPO_ID,
       path: filePath,

@@ -4,16 +4,7 @@
 //   await import("web-streams-polyfill/polyfill");
 // }
 
-import {
-  init,
-  classModule,
-  propsModule,
-  attributesModule,
-  styleModule,
-  eventListenersModule,
-  h,
-  type VNode,
-} from "snabbdom";
+import { h, type VNode } from "snabbdom";
 
 import { capitalizeFirstLetter, downloadTextFile, isMobile } from "./util";
 import { type ThemeKey, puzzleThemes } from "./themes";
@@ -24,7 +15,8 @@ import {
   Status,
   checkboxPGNInclude,
 } from "./view";
-import { makeModal } from "./modal";
+import { log } from "./log";
+import { makeModal, type OpenModal } from "./modal";
 import { Db } from "./db";
 import { Parquet } from "./parquet";
 import {
@@ -34,15 +26,7 @@ import {
   PgnFilerSortExportOptions,
 } from "./pgn";
 import { VERSION } from "./version";
-
-const patch = init([
-  // Init patch function with chosen modules
-  classModule, // makes it easy to toggle classes
-  propsModule, // for setting properties on DOM elements
-  attributesModule,
-  styleModule, // handles styling on elements with support for animations
-  eventListenersModule, // attaches event listeners
-]);
+import { patch } from "./patch";
 
 // whether each dropdown is opened
 interface DropdownsState {
@@ -325,6 +309,21 @@ class Controller {
                 }),
               ]),
             ),
+            h(
+              "li",
+              h("div", [
+                h("div", h("label.label", h("span.label-text", "Show logs"))),
+                makeModal(() => {
+                  let txt: string = "";
+                  log.get().then((logTxt) => {
+                    txt = logTxt;
+                  });
+                  setTimeout(() => {}, 1000); // wait for log retrieval
+                  console.log("txt", txt);
+                  return txt;
+                }),
+              ]),
+            ),
           ]),
         ]),
       ]),
@@ -385,7 +384,7 @@ class Controller {
 
   private displayAlreadyFilteredThemes(
     themes: Set<ThemeKey>,
-  ): (openModal: () => void) => VNode {
+  ): (openModal: OpenModal) => VNode {
     return (openModal) =>
       h(
         "button.bg-base-200.rounded-box.p-10.w-full.flex.flex-wrap",
@@ -440,7 +439,7 @@ class Controller {
   private simpleOptsUpdate(key: keyof PgnFilerSortExportOptions) {
     return this.bind((e: any) => {
       const target = (e.target as HTMLInputElement).value;
-      console.log("simple update with key and target", key, target);
+      log.log(`simple update with key {${key}}, target {${target}}`);
       // @ts-ignore
       if (target) this.opts[key] = Number((e.target as HTMLInputElement).value);
       // @ts-ignore
@@ -453,6 +452,7 @@ export function main() {
   console.log(VERSION);
   const container = document.getElementById("container")!;
   Db.open().then((db) => {
+    log.init(db);
     const ctrl = new Controller(container, db);
     ctrl.redraw();
   });

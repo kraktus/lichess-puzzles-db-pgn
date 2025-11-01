@@ -3,6 +3,7 @@ import { h, type VNode, type VNodeChildren } from "snabbdom";
 import { themeByCateg, type PuzzleTheme, type ThemeKey } from "./themes";
 import { toggleElm } from "./util";
 import { VERSION } from "./version";
+import { log } from "./log";
 
 export class Status {
   private msg: string;
@@ -17,7 +18,7 @@ export class Status {
 
   update(msg: string) {
     this.msg = msg;
-    console.log(`Status: ${msg}`);
+    log.log(`Status: ${msg}`);
     this.redraw();
   }
 
@@ -89,7 +90,6 @@ export const themesMenu = (
           on: {
             click: () => {
               toggleElm(filtered, theme.key);
-              console.log(filtered);
               redraw();
             },
           },

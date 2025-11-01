@@ -1,3 +1,5 @@
+import { log } from "./log";
+
 const prefix = "lipuzzles-csv";
 //const objectStore = "db";
 
@@ -28,23 +30,22 @@ export class Db {
           }
         }
       };
-      openReq.onerror = (event: any) =>
-        console.error(`DB open error: ${event}`);
+      openReq.onerror = (event: any) => log.error(`DB open error: ${event}`);
       openReq.onblocked = function () {
         // this event shouldn't trigger if we handle onversionchange correctly
         const blocked =
           "Database is blocked, close all other tabs of this page";
-        console.error(blocked);
+        log.error(blocked);
         alert(blocked);
       };
       openReq.onsuccess = function () {
-        console.log("IndexedDB opened successfully");
+        log.log("IndexedDB opened successfully");
         let db = openReq.result;
 
         db.onversionchange = function () {
           db.close();
           const outdated = "Database is outdated, please reload the page.";
-          console.error(outdated);
+          log.error(outdated);
           alert(outdated);
         };
         const stores = {
@@ -64,7 +65,7 @@ export class Db {
     localStorage.clear();
     return new Promise<void>((resolve, reject) => {
       deleteReq.onsuccess = () => {
-        console.log("IndexedDB deleted successfully");
+        log.log("IndexedDB deleted successfully");
         resolve();
       };
       deleteReq.onerror = (event: any) =>
@@ -72,19 +73,20 @@ export class Db {
       deleteReq.onblocked = () => {
         const blocked =
           "Database deletion is blocked, close all other tabs of this page";
-        console.error(blocked);
+        log.error(blocked);
         alert(blocked);
       };
     });
   }
 
   getLocalStorage(key: string): string | null {
-    console.log(`Getting from localStorage: ${key}`);
-    return window.localStorage.getItem(`${prefix}-${key}`);
+    const value = window.localStorage.getItem(`${prefix}-${key}`);
+    log.log(`localStorage get: key {${key}} value {${value}}`);
+    return value;
   }
 
   setLocalSorage(key: string, value: string) {
-    console.log(`Setting to localStorage: ${key}, ${value}`);
+    log.log(`localStorage set: key {${key}} value {${value}}`);
     window.localStorage.setItem(`${prefix}-${key}`, value);
   }
 }
