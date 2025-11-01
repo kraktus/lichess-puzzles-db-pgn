@@ -15,7 +15,7 @@ import {
   Status,
   checkboxPGNInclude,
 } from "./view";
-import { log } from "./log";
+import { log, addExceptionListeners } from "./log";
 import { makeModal, type OpenModal } from "./modal";
 import { Db } from "./db";
 import { Parquet } from "./parquet";
@@ -450,6 +450,7 @@ class Controller {
 
 export function main() {
   console.log(VERSION);
+  addExceptionListeners();
   const container = document.getElementById("container")!;
   Db.open().then((db) => {
     log.init(db);

@@ -1,7 +1,7 @@
 import { h, type VNode, type VNodeChildren } from "snabbdom";
 import { patch } from "./patch";
 
-export type OpenModal = (_: any, vnode: VNode) => () => void;
+export type OpenModal = (_: any, vnode: VNode) => void;
 
 // modal with an `X`/cross close button
 export function makeModal(
@@ -37,9 +37,8 @@ export function makeModal(
         typeof content === "function" ? content() : content,
       ]),
     ]);
-  let btnElement: HTMLElement;
   let dialog: VNode | HTMLElement;
-  const openModal = (_: any, vnode: VNode) => () => {
+  const openModal = (_: any, vnode: VNode) => {
     console.log("--------------------------");
     const elm = vnode.elm as HTMLElement;
     console.log("dialog before", dialog);
@@ -61,14 +60,8 @@ export function makeModal(
       : h(
           "button.btn",
           {
-            hook: {
-              insert: (vnode: VNode) => {
-                console.log("vnode", vnode);
-                btnElement = vnode.elm as HTMLElement;
-              },
-            },
             on: {
-              click: (_: any, node: VNode) => openModal(_, node)(),
+              click: openModal,
             },
           },
           "Open modal",

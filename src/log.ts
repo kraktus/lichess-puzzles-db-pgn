@@ -72,10 +72,16 @@ export function makeLog(windowSize: number): PermaLog {
       drift = 0.001;
       lastKey = nextKey;
     }
-    ready.then((store) => store.put(nextKey, msg)).catch(console.error);
+    ready
+      .then((store) => {
+        console.log("PUUUTED");
+        store.put(nextKey, msg);
+      })
+      .catch(console.error);
   };
 
   const init = (db: Db) => {
+    console.log("INIT");
     resolveReady(db.stores.log);
   };
 
