@@ -6,7 +6,12 @@
 
 import { h, type VNode } from "snabbdom";
 
-import { capitalizeFirstLetter, downloadTextFile, isMobile } from "./util";
+import {
+  capitalizeFirstLetter,
+  downloadTextFile,
+  isMobile,
+  isTouchDevice,
+} from "./util";
 import { type ThemeKey, puzzleThemes } from "./themes";
 import {
   section,
@@ -206,8 +211,6 @@ class Controller {
                 h("span.label-text", "Maximum Number of Puzzles"),
               ),
             ),
-            // <fieldset class="fieldset">
-            // <input type="number" class="input" placeholder="Type here" />
             h("input.input.validator", {
               attrs: {
                 type: "number",
@@ -290,8 +293,6 @@ class Controller {
                   "div",
                   h("label.label", h("span.label-text", "Parquet chunk size")),
                 ),
-                // <fieldset class="fieldset">
-                // <input type="number" class="input" placeholder="Type here" />
                 h("input.input.validator", {
                   attrs: {
                     type: "number",
@@ -313,15 +314,25 @@ class Controller {
               "li",
               h("div", [
                 h("div", h("label.label", h("span.label-text", "Show logs"))),
-                makeModal(() => {
-                  let txt: string = "";
-                  log.get().then((logTxt) => {
-                    txt = logTxt;
-                  });
-                  setTimeout(() => {}, 1000); // wait for log retrieval
-                  console.log("txt", txt);
-                  return txt;
-                }),
+                makeModal(() =>
+                  h("div", [
+                    `Browser: ${navigator.userAgent}\n` +
+                      `Cores: ${navigator.hardwareConcurrency}, ` +
+                      `Touch: ${isTouchDevice()} ${navigator.maxTouchPoints}, ` +
+                      `Screen: ${window.screen.width}x${window.screen.height}, ` +
+                      ("lichessTools" in window
+                        ? "Extension: Lichess Tools, "
+                        : "") +
+                      `Browser lang: ${navigator.language}, `,
+                    ...log.cachedGet().map((line) => {
+                      console.log("line", line);
+                      return h(
+                        "pre.whitespace-pre-wrap.break-words.text-sm",
+                        line,
+                      );
+                    }),
+                  ]),
+                ),
               ]),
             ),
           ]),

@@ -10,7 +10,8 @@ interface PermaLog {
   warn(...args: any[]): void;
   error(...args: any[]): void;
   clear(): Promise<void>;
-  get(): Promise<string>;
+  get(): Promise<string[]>;
+  cachedGet(): string[];
 }
 
 export const log: PermaLog = makeLog(100);
@@ -49,6 +50,7 @@ export function makeLog(windowSize: number): PermaLog {
   };
 
   function stringify(val: any): string {
+    console.log("stringify", val, JSON.stringify(val));
     return !val || typeof val === "string" ? String(val) : JSON.stringify(val);
   }
 
@@ -95,7 +97,7 @@ export function makeLog(windowSize: number): PermaLog {
     lastKey = 0;
   };
 
-  const get = async (): Promise<string> => {
+  const get = async (): Promise<string[]> => {
     const store = await ready;
     try {
       const keys = await store.list();
@@ -107,15 +109,24 @@ export function makeLog(windowSize: number): PermaLog {
       console.error(e);
       store.clear();
       // window.indexedDB.deleteDatabase(dbInfo.db ?? dbInfo.store);
-      return "";
+      return [];
     }
     const [keys, vals] = await Promise.all([store.list(), store.getMany()]);
-    return (keys as number[])
-      .map(
-        (k, i) =>
-          `${new Date(k).toISOString().replace(/[TZ]/g, " ")}${vals[i]}`,
-      )
-      .join("\n");
+    console.log("log get", keys, vals);
+    return (keys as number[]).map(
+      (k, i) =>
+        // @ts-ignore
+        `${new Date(k).toISOString().replace(/[TZ]/g, " ")}${vals[i].data}`,
+    );
+  };
+  let cacheOfGet: string[] = [];
+  const cachedGet = (): string[] => {
+    get().then((res) => {
+      if (res !== cacheOfGet) {
+        cacheOfGet = res;
+      }
+    });
+    return cacheOfGet;
   };
 
   return {
@@ -126,5 +137,6 @@ export function makeLog(windowSize: number): PermaLog {
     error,
     clear,
     get,
+    cachedGet,
   };
 }

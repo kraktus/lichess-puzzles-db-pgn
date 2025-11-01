@@ -13,6 +13,13 @@ export function isMobile() {
   );
 }
 
+const hasMouse = window.matchMedia(
+  "(hover: hover) and (pointer: fine)",
+).matches;
+export function isTouchDevice() {
+  return !hasMouse;
+}
+
 export async function toBase64(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

@@ -39,7 +39,6 @@ export class Db {
         alert(blocked);
       };
       openReq.onsuccess = function () {
-        log.log("IndexedDB opened successfully");
         let db = openReq.result;
 
         db.onversionchange = function () {
@@ -65,7 +64,6 @@ export class Db {
     localStorage.clear();
     return new Promise<void>((resolve, reject) => {
       deleteReq.onsuccess = () => {
-        log.log("IndexedDB deleted successfully");
         resolve();
       };
       deleteReq.onerror = (event: any) =>
@@ -81,7 +79,6 @@ export class Db {
 
   getLocalStorage(key: string): string | null {
     const value = window.localStorage.getItem(`${prefix}-${key}`);
-    log.log(`localStorage get: key {${key}} value {${value}}`);
     return value;
   }
 
