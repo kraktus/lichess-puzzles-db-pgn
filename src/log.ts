@@ -34,12 +34,14 @@ export function addExceptionListeners() {
 }
 
 export function makeLog(windowSize: number): PermaLog {
-  let resolveReady: (res: Store) => void;
+  let init = (db: Db) => {};
   let lastKey = 0;
   let drift = 0.001;
 
   const ready = new Promise<Store>((resolve) => {
-    resolveReady = resolve;
+    init = (db: Db) => {
+      resolve(db.stores.log);
+    };
   });
 
   (Error.prototype as any).toJSON ??= function () {
@@ -57,11 +59,14 @@ export function makeLog(windowSize: number): PermaLog {
     switch (level) {
       case "log":
       case "info":
-        return console.log(...args);
+        console.log(...args);
+        break;
       case "warn":
-        return console.warn(...args);
+        console.warn(...args);
+        break;
       case "error":
-        return console.error(...args);
+        console.error(...args);
+        break;
     }
     const msg = args.map(stringify).join(" ");
     let nextKey = Date.now();
@@ -74,15 +79,9 @@ export function makeLog(windowSize: number): PermaLog {
     }
     ready
       .then((store) => {
-        console.log("PUUUTED");
         store.put(nextKey, msg);
       })
       .catch(console.error);
-  };
-
-  const init = (db: Db) => {
-    console.log("INIT");
-    resolveReady(db.stores.log);
   };
 
   const log = (...args: any[]) => writeMsg("log", ...args);
