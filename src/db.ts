@@ -1,14 +1,19 @@
 const prefix = "lipuzzles-csv";
-const objectStore = "db";
+//const objectStore = "db";
 
 // TODO, switch to `idb` package?
 type IDbValue = Blob | string | ArrayBuffer | Uint8Array | string[];
 
+const storeKeys = ["log", "parquet"] as const;
+type StoreKeys = (typeof storeKeys)[number];
+
 export class Db {
   private inner: IDBDatabase;
+  private stores: Record<StoreKeys, Store>;
 
-  constructor(inner: IDBDatabase) {
+  constructor(inner: IDBDatabase, stores: Record<StoreKeys, Store>) {
     this.inner = inner;
+    this.stores = stores;
   }
 
   static async open(): Promise<Db> {
@@ -16,8 +21,11 @@ export class Db {
     return new Promise<Db>((resolve) => {
       openReq.onupgradeneeded = () => {
         let db = openReq.result;
-        if (!db.objectStoreNames.contains(objectStore)) {
-          db.createObjectStore(objectStore, { keyPath: "id" });
+        // create all stores
+        for (const storeKey of storeKeys) {
+          if (!db.objectStoreNames.contains(storeKey)) {
+            db.createObjectStore(storeKey, { keyPath: "id" });
+          }
         }
       };
       openReq.onerror = (event: any) =>
@@ -39,7 +47,11 @@ export class Db {
           console.error(outdated);
           alert(outdated);
         };
-        resolve(new Db(db));
+        const stores = {
+          log: new Store(db, "log"),
+          parquet: new Store(db, "parquet"),
+        };
+        resolve(new Db(db, stores));
       };
     });
   }
@@ -67,8 +79,40 @@ export class Db {
   }
 
   async getIndexedDb<T extends IDbValue>(key: string): Promise<T | null> {
-    const tx = this.inner.transaction(objectStore, "readonly");
-    const store = tx.objectStore(objectStore);
+    // DEBUG
+    return Promise.resolve(null);
+  }
+
+  getLocalStorage(key: string): string | null {
+    console.log(`Getting from localStorage: ${key}`);
+    return window.localStorage.getItem(`${prefix}-${key}`);
+  }
+
+  // ArrayBuffer, Blob, File, and typed arrays like Uint8Array
+  async setIndexedDb(key: string, value: IDbValue): Promise<void> {
+    // DEBUG
+    return Promise.resolve();
+  }
+
+  setLocalSorage(key: string, value: string) {
+    console.log(`Setting to localStorage: ${key}, ${value}`);
+    window.localStorage.setItem(`${prefix}-${key}`, value);
+  }
+}
+
+// IDB store
+export class Store {
+  private db: IDBDatabase;
+  private storeKey: StoreKeys;
+
+  constructor(db: IDBDatabase, storeKey: StoreKeys) {
+    this.db = db;
+    this.storeKey = storeKey;
+  }
+
+  async getIndexedDb<T extends IDbValue>(key: string): Promise<T | null> {
+    const tx = this.db.transaction(this.storeKey, "readonly");
+    const store = tx.objectStore(this.storeKey);
     const req = store.get(key);
     return new Promise<T | null>((resolve, reject) => {
       req.onsuccess = () => {
@@ -83,15 +127,10 @@ export class Db {
     });
   }
 
-  getLocalStorage(key: string): string | null {
-    console.log(`Getting from localStorage: ${key}`);
-    return window.localStorage.getItem(`${prefix}-${key}`);
-  }
-
   // ArrayBuffer, Blob, File, and typed arrays like Uint8Array
   async setIndexedDb(key: string, value: IDbValue): Promise<void> {
-    const tx = this.inner.transaction(objectStore, "readwrite");
-    const store = tx.objectStore(objectStore);
+    const tx = this.db.transaction(this.storeKey, "readwrite");
+    const store = tx.objectStore(this.storeKey);
     const req = store.put({ id: key, data: value });
     return new Promise<void>((resolve, reject) => {
       req.onsuccess = () => {
@@ -101,10 +140,5 @@ export class Db {
       req.onerror = (event: any) =>
         reject(new Error(`Failed to set IndexedDB item: ${event}`));
     });
-  }
-
-  setLocalSorage(key: string, value: string) {
-    console.log(`Setting to localStorage: ${key}, ${value}`);
-    window.localStorage.setItem(`${prefix}-${key}`, value);
   }
 }
