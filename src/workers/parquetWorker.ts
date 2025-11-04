@@ -5,11 +5,7 @@ import {
 } from "hyparquet";
 import { compressors } from "hyparquet-compressors";
 
-import {
-  type MainMessage,
-  LIST_PARQUET_PATHS_KEY,
-  PGN_EXPORT_KEY,
-} from "../protocol";
+import { type MainMessage, LIST_PARQUET_PATHS_KEY, Tmp } from "../protocol";
 import {
   type PgnFilerSortExportOptions,
   filterPuzzle,
@@ -25,10 +21,12 @@ const COLUMNS = ["PuzzleId", "FEN", "Moves", "Rating", "Popularity", "Themes"];
 
 interface State {
   store: Store;
+  tmp: Tmp;
 }
 let statePromise = Db.open({ deleteTmp: false }).then((db) => {
   return {
     store: db.stores.parquet,
+    tmp: new Tmp(db.stores.tmp),
   };
 });
 
@@ -138,6 +136,7 @@ async function readFilterSortPuzzleDb(
     }
   }
   let puzzles = results.listSorted();
+  console.log(`Total puzzles after filtering: ${puzzles.length}`);
   if (opts.maxPuzzles !== undefined) {
     update(`Only keeping firsts ${opts.maxPuzzles} `);
     puzzles = puzzles.slice(0, opts.maxPuzzles);
@@ -146,21 +145,21 @@ async function readFilterSortPuzzleDb(
 }
 
 async function toPgn(
-  puzzles: PuzzleRecord[],
   opts: PgnFilerSortExportOptions,
   rowReadChunkSize: number,
+  nbPuzzles: number,
 ): Promise<void> {
   const state = await statePromise;
-  // get slice of `rowReadChunkSize` to avoid memory issue
-  for (let i = 0; i < puzzles.length / rowReadChunkSize; i++) {
-    const start = i * rowReadChunkSize;
-    update(`Exporting puzzles to PGN... (${start}/${puzzles.length})`);
-    const end = Math.min(start + rowReadChunkSize, puzzles.length);
-    const chunk = puzzles.slice(start, end);
-    const pgnChunk = chunk
+  let chunkNo = 0;
+  for await (const puzzlesChunk of state.tmp.iteratePuzzleRecordsChunks()) {
+    update(
+      `Exporting puzzles to PGN... (${chunkNo * rowReadChunkSize}/${nbPuzzles})`,
+    );
+    const pgnChunk = puzzlesChunk
       .map((puzzle) => puzzleToPGN(puzzle, opts))
       .join("\n\n");
-    await state.store.put(PGN_EXPORT_KEY(i), pgnChunk);
+    await state.tmp.setPgnChunk(chunkNo, pgnChunk);
+    chunkNo++;
   }
 }
 
@@ -168,11 +167,21 @@ self.onmessage = async (event: MessageEvent<MainMessage>) => {
   const msg = event.data;
   switch (msg.tpe) {
     case "sendWork":
-      const puzzles = await readFilterSortPuzzleDb(
+      const rowReadChunkSize = msg.work.rowReadChunkSize;
+      let puzzles: PuzzleRecord[] | undefined = await readFilterSortPuzzleDb(
         msg.work.opts,
-        msg.work.rowReadChunkSize,
+        rowReadChunkSize,
       );
-      await toPgn(puzzles, msg.work.opts, msg.work.rowReadChunkSize);
+      const nbPuzzles = puzzles.length;
+      const state = await statePromise;
+      for (let i = 0; i < puzzles.length / rowReadChunkSize; i++) {
+        const start = i * rowReadChunkSize;
+        const end = Math.min(start + rowReadChunkSize, puzzles.length);
+        log(`Dumping puzzle records chunk ${i} (${start}/${nbPuzzles})...`);
+        state.tmp.setPuzzleRecordChunk(i, puzzles.slice(start, end));
+      }
+      puzzles = undefined; // make sure to free memory
+      await toPgn(msg.work.opts, rowReadChunkSize, nbPuzzles);
       self.postMessage({ tpe: "workDone" });
       break;
   }

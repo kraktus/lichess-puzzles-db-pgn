@@ -4,7 +4,7 @@ const prefix = "lipuzzles-csv";
 //const objectStore = "db";
 
 // TODO, switch to `idb` package?
-type IDbValue =
+export type IDbValue =
   | Blob
   | string
   | ArrayBuffer
@@ -13,6 +13,7 @@ type IDbValue =
   | number
   | object;
 
+// bump version when touching this
 const storeKeys = ["log", "parquet", "tmp"] as const;
 type StoreKeys = (typeof storeKeys)[number];
 
@@ -26,22 +27,20 @@ export class Db {
   }
 
   static async open(opts: { deleteTmp: boolean }): Promise<Db> {
-    const openReq = indexedDB.open(prefix, 1);
+    const openReq = indexedDB.open(prefix, 2);
     return new Promise<Db>((resolve) => {
       openReq.onupgradeneeded = () => {
         let db = openReq.result;
-        // delete tmp store if it exists
-        if (db.objectStoreNames.contains("tmp") && opts.deleteTmp) {
-          db.deleteObjectStore("tmp");
-        }
         // create all stores
         for (const storeKey of storeKeys) {
           if (!db.objectStoreNames.contains(storeKey)) {
+            log.log(`Creating object store: ${storeKey}`);
             db.createObjectStore(storeKey, { keyPath: "id" });
           }
         }
       };
-      openReq.onerror = (event: any) => log.error(`DB open error: ${event}`);
+      openReq.onerror = (event: any) =>
+        log.error(`DB open error: ${JSON.stringify(event)}`);
       openReq.onblocked = function () {
         // this event shouldn't trigger if we handle onversionchange correctly
         const blocked =
@@ -51,6 +50,13 @@ export class Db {
       };
       openReq.onsuccess = function () {
         let db = openReq.result;
+        // clear tmp store if it exists
+        if (opts.deleteTmp && db.objectStoreNames.contains("tmp")) {
+          log.log("Clearing tmp store...");
+          const tx = db.transaction("tmp", "readwrite");
+          const store = tx.objectStore("tmp");
+          store.clear();
+        }
 
         db.onversionchange = function () {
           db.close();

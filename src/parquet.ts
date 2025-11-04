@@ -4,11 +4,7 @@ import { type PgnFilerSortExportOptions, type PuzzleRecord } from "./pgn";
 import { Status } from "./view";
 import { sortingIncludingBigInt } from "./util";
 import { log } from "./log";
-import {
-  LIST_PARQUET_PATHS_KEY,
-  PGN_EXPORT_KEY,
-  type WorkerMessge,
-} from "./protocol";
+import { LIST_PARQUET_PATHS_KEY, Tmp, type WorkerMessge } from "./protocol";
 import ParquetWorker from "./workers/parquetWorker?worker";
 
 const REPO_ID = "datasets/Lichess/chess-puzzles";
@@ -64,6 +60,7 @@ class Dl {
 export class Parquet {
   private db: Db;
   private store: Store;
+  private tmp: Tmp;
   // whether download is in progress or not
   private dl: Dl;
   private lastUpdated?: Date;
@@ -73,6 +70,7 @@ export class Parquet {
   constructor(db: Db, status: Status, rowReadChunkSize: number) {
     this.db = db;
     this.store = db.stores.parquet;
+    this.tmp = new Tmp(db.stores.tmp);
     const retrieved = this.db.getLocalStorage("last-updated");
     this.lastUpdated = retrieved ? new Date(retrieved) : undefined;
     if (this.lastUpdated) {
@@ -138,16 +136,8 @@ export class Parquet {
   }
 
   // get the exported PGN chunks from the IDB as chunks of size `rowReadChunkSize`
-  async *exportPgnChunks(): AsyncGenerator<string, void, unknown> {
-    let chunkNo = 0;
-    while (true) {
-      const pgnChunk = await this.store.get<string>(PGN_EXPORT_KEY(chunkNo));
-      if (!pgnChunk) {
-        break;
-      }
-      yield pgnChunk;
-      chunkNo += 1;
-    }
+  exportPgnChunks(): AsyncGenerator<string, void, unknown> {
+    return this.tmp.iteratePgnChunks();
   }
 
   // download the .parquet files from the dataset

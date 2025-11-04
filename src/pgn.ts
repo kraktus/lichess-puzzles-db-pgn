@@ -40,6 +40,8 @@ export const defaultWithoutFilters = () => {
     maxRating: ceilingPuzzleRating,
     includeTags: true,
     includeComments: false,
+    // DEBUG
+    maxPuzzles: 100,
   };
 };
 
