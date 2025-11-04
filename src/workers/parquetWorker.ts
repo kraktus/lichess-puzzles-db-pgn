@@ -26,7 +26,7 @@ const COLUMNS = ["PuzzleId", "FEN", "Moves", "Rating", "Popularity", "Themes"];
 interface State {
   store: Store;
 }
-let statePromise = Db.open().then((db) => {
+let statePromise = Db.open({ deleteTmp: false }).then((db) => {
   return {
     store: db.stores.parquet,
   };

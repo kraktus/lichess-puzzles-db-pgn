@@ -420,7 +420,7 @@ export function main() {
   console.log(VERSION);
   addExceptionListeners();
   const container = document.getElementById("container")!;
-  Db.open().then((db) => {
+  Db.open({ deleteTmp: true }).then((db) => {
     log.init(db);
     const ctrl = new Controller(container, db);
     ctrl.redraw();

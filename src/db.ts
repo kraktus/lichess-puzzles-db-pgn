@@ -13,7 +13,7 @@ type IDbValue =
   | number
   | object;
 
-const storeKeys = ["log", "parquet"] as const;
+const storeKeys = ["log", "parquet", "tmp"] as const;
 type StoreKeys = (typeof storeKeys)[number];
 
 export class Db {
@@ -25,11 +25,15 @@ export class Db {
     this.stores = stores;
   }
 
-  static async open(): Promise<Db> {
+  static async open(opts: { deleteTmp: boolean }): Promise<Db> {
     const openReq = indexedDB.open(prefix, 1);
     return new Promise<Db>((resolve) => {
       openReq.onupgradeneeded = () => {
         let db = openReq.result;
+        // delete tmp store if it exists
+        if (db.objectStoreNames.contains("tmp") && opts.deleteTmp) {
+          db.deleteObjectStore("tmp");
+        }
         // create all stores
         for (const storeKey of storeKeys) {
           if (!db.objectStoreNames.contains(storeKey)) {
@@ -57,6 +61,7 @@ export class Db {
         const stores = {
           log: new Store(db, "log"),
           parquet: new Store(db, "parquet"),
+          tmp: new Store(db, "tmp"),
         };
         resolve(new Db(db, stores));
       };
