@@ -168,7 +168,8 @@ self.onmessage = async (event: MessageEvent<MainMessage>) => {
         const start = i * recordToPGNChunkSize;
         const end = Math.min(start + recordToPGNChunkSize, puzzles.length);
         update(`Prepating for PGN export (${start}/${nbPuzzles})...`);
-        state.tmp.setPuzzleRecordChunk(i, puzzles.slice(start, end));
+        const slice = puzzles.slice(start, end);
+        state.tmp.setPuzzleRecordChunk(i, slice);
       }
       self.postMessage({ tpe: "parquetDone", nbPuzzles });
       break;
