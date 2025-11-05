@@ -100,7 +100,7 @@ export function makeLog(windowSize: number): PermaLog {
     const store = await ready;
     try {
       const keys = await store.list();
-      if (windowSize >= 0 && keys.length > windowSize)
+      if (windowSize >= 0 && keys?.length > windowSize)
         await store.remove(
           IDBKeyRange.upperBound(keys[keys.length - windowSize], true),
         );

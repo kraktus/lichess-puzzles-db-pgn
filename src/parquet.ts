@@ -8,9 +8,11 @@ import {
   LIST_PARQUET_PATHS_KEY,
   Tmp,
   type WorkerMessge,
-  type SendWork,
+  type SendParquet,
+  type SendPgn,
 } from "./protocol";
 import ParquetWorker from "./workers/parquetWorker?worker";
+import PgnWorker from "./workers/pgnWorker?worker";
 
 const REPO_ID = "datasets/Lichess/chess-puzzles";
 const REVISION = "main";
@@ -99,17 +101,19 @@ export class Parquet {
     if (this.downloadNeeded({ ifAlreadyWip: true })) {
       throw new Error("Parquet files need to be downloaded/refreshed first.");
     }
+    const recordToPGNChunkSize = 20_000;
     const worker = new ParquetWorker();
-    const work: SendWork = {
+    const work: SendParquet = {
       opts: opts,
       rowReadChunkSize: this.rowReadChunkSize,
-      recordToPGNChunkSize: 20_000,
+      recordToPGNChunkSize,
     };
 
     worker.postMessage({
-      tpe: "sendWork",
+      tpe: "sendParquet",
       work,
     });
+    let nbPuzzles: number;
     await new Promise<void>((resolve, reject) => {
       worker.onmessage = (event: MessageEvent<WorkerMessge>) => {
         switch (event.data.tpe) {
@@ -119,8 +123,39 @@ export class Parquet {
           case "log":
             log.log(`Worker: ${event.data.log}`);
             break;
-          case "workDone":
-            this.status.update("Export work done.");
+          case "parquetDone":
+            this.status.update("Preparing PGN is done");
+            nbPuzzles = event.data.nbPuzzles;
+            resolve();
+            break;
+          case "error":
+            this.status.update(`Error: ${event.data.error}`);
+            reject(new Error(event.data.error));
+            break;
+        }
+      };
+    });
+    const pgnWorker = new PgnWorker();
+    const pgnWork: SendPgn = {
+      opts: opts,
+      nbPuzzles: nbPuzzles!,
+      recordToPGNChunkSize,
+    };
+    pgnWorker.postMessage({
+      tpe: "sendPgn",
+      work: pgnWork,
+    });
+    await new Promise<void>((resolve, reject) => {
+      pgnWorker.onmessage = (event: MessageEvent<WorkerMessge>) => {
+        switch (event.data.tpe) {
+          case "status":
+            this.status.update(event.data.status);
+            break;
+          case "log":
+            log.log(`PGN Worker: ${event.data.log}`);
+            break;
+          case "pgnDone":
+            this.status.update("PGN export work done.");
             resolve();
             break;
           case "error":

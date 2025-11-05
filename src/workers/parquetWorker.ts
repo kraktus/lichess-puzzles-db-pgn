@@ -153,29 +153,10 @@ async function readFilterSortPuzzleDb(
   return puzzles;
 }
 
-async function toPgn(
-  opts: PgnFilerSortExportOptions,
-  recordToPGNChunkSize: number,
-  nbPuzzles: number,
-): Promise<void> {
-  const state = await statePromise;
-  let chunkNo = 0;
-  for await (const puzzlesChunk of state.tmp.iteratePuzzleRecordsChunks()) {
-    update(
-      `Exporting puzzles to PGN... (${chunkNo * recordToPGNChunkSize}/${nbPuzzles})`,
-    );
-    const pgnChunk = puzzlesChunk
-      .map((puzzle) => puzzleToPGN(puzzle, opts))
-      .join("\n\n");
-    await state.tmp.setPgnChunk(chunkNo, pgnChunk);
-    chunkNo++;
-  }
-}
-
 self.onmessage = async (event: MessageEvent<MainMessage>) => {
   const msg = event.data;
   switch (msg.tpe) {
-    case "sendWork":
+    case "sendParquet":
       const recordToPGNChunkSize = msg.work.recordToPGNChunkSize;
       let puzzles: PuzzleRecord[] | undefined = await readFilterSortPuzzleDb(
         msg.work.opts,
@@ -189,9 +170,7 @@ self.onmessage = async (event: MessageEvent<MainMessage>) => {
         update(`Prepating for PGN export (${start}/${nbPuzzles})...`);
         state.tmp.setPuzzleRecordChunk(i, puzzles.slice(start, end));
       }
-      puzzles = undefined; // free memory
-      await toPgn(msg.work.opts, recordToPGNChunkSize, nbPuzzles);
-      self.postMessage({ tpe: "workDone" });
+      self.postMessage({ tpe: "parquetDone", nbPuzzles });
       break;
   }
 };

@@ -48,21 +48,32 @@ export class Tmp {
   }
 }
 
-export interface SendWork {
+export interface SendParquet {
   opts: PgnFilerSortExportOptions;
   rowReadChunkSize: number;
   recordToPGNChunkSize: number;
 }
+export interface SendPgn {
+  opts: PgnFilerSortExportOptions;
+  nbPuzzles: number;
+  recordToPGNChunkSize: number;
+}
 
 // from mainThread -> Worker
-export type MainMessage = {
-  tpe: "sendWork";
-  work: SendWork;
-};
+export type MainMessage =
+  | {
+      tpe: "sendParquet";
+      work: SendParquet;
+    }
+  | {
+      tpe: "sendPgn";
+      work: SendPgn;
+    };
 
 // from Worker -> mainThread
 export type WorkerMessge =
   | { tpe: "status"; status: string }
   | { tpe: "log"; log: string }
-  | { tpe: "workDone" } // result is saved in the IDB
+  | { tpe: "parquetDone"; nbPuzzles: number }
+  | { tpe: "pgnDone" }
   | { tpe: "error"; error: string };
