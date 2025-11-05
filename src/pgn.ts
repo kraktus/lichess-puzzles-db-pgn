@@ -34,13 +34,13 @@ export interface PgnFilerSortExportOptions {
 // theme filters moved to separate interface `ThemesCtrl`
 export type WithoutFilters = Omit<PgnFilerSortExportOptions, "themeFilters">;
 
-export const defaultWithoutFilters = () => {
+export const defaultWithoutFilters = (): WithoutFilters => {
   return {
     minRating: floorPuzzleRating,
     maxRating: ceilingPuzzleRating,
     includeTags: true,
     includeComments: false,
-    // DEBUG
+    sortBy: "popularity",
     maxPuzzles: 100,
   };
 };

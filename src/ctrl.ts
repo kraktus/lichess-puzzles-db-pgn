@@ -103,7 +103,7 @@ class Controller {
     this.parquet = new Parquet(
       this.db,
       this.status,
-      isMobile() ? 50_000 : 200_000,
+      isMobile() ? 50_000 : 1000_000,
     );
     // DEBUG to true
     this.dropdowns = {
@@ -243,16 +243,12 @@ class Controller {
         ,
         // Sort Section
         section("Sort by", this.dropdowns.sortBy, [
-          this.radioSort("rating", "primary"),
-          h("label.cursor-pointer.flex.items-center.gap-2", [
-            h("input.radio.radio-secondary", {
-              attrs: { type: "radio", name: "sort" },
-              on: {
-                change: this.setSort("popularity"),
-              },
-            }),
-            h("span", "Popularity"),
-          ]),
+          this.radioSort(this.opts.sortBy == "rating", "rating", "primary"),
+          this.radioSort(
+            this.opts.sortBy == "popularity",
+            "popularity",
+            "secondary",
+          ),
         ]),
 
         // Include Section
@@ -389,12 +385,12 @@ class Controller {
     };
   }
 
-  private radioSort = (key: SortBy, color: string) =>
+  private radioSort = (checked: boolean, key: SortBy, color: string) =>
     h("label.cursor-pointer.flex.items-center.gap-2", [
       // FIXME it's discouraged to dynamically create class due to tailwind class purging that may remove it
       // I think for DaisyUI it's fine though
       h(`input.radio.radio-${color}`, {
-        attrs: { type: "radio", name: "sort" },
+        attrs: { type: "radio", name: "sort", checked },
         on: {
           change: this.setSort(key),
         },

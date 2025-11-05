@@ -18,7 +18,7 @@ export class ThemeCtrl {
 
   constructor(readonly redraw: () => void) {
     // DEBUG
-    this.themes = [new Set(["opening"])].map((tf) => ({
+    this.themes = [].map((tf) => ({
       modal: new Modal(this.redraw),
       filters: tf,
     }));

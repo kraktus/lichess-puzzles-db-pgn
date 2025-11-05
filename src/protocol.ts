@@ -51,6 +51,7 @@ export class Tmp {
 export interface SendWork {
   opts: PgnFilerSortExportOptions;
   rowReadChunkSize: number;
+  recordToPGNChunkSize: number;
 }
 
 // from mainThread -> Worker

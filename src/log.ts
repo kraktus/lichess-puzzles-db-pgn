@@ -50,7 +50,6 @@ export function makeLog(windowSize: number): PermaLog {
   };
 
   function stringify(val: any): string {
-    console.log("stringify", val, JSON.stringify(val));
     return !val || typeof val === "string" ? String(val) : JSON.stringify(val);
   }
 

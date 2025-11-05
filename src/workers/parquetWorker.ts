@@ -71,12 +71,22 @@ class PuzzlesSorted<T extends PuzzleRecord[] | Map<number, PuzzleRecord[]>> {
   listSorted(): PuzzleRecord[] {
     if (this.inner instanceof Map && this.sortBy) {
       update(`Sorting puzzles by ${this.sortBy}...`);
+      const totalLen = Array.from(this.inner.values()).reduce(
+        (acc, arr) => acc + arr.length,
+        0,
+      );
       const sortedKeys = Array.from(this.inner.keys()).sort((a, b) => b - a);
-      const result: PuzzleRecord[] = [];
+      // fixed length array at first to avoid reallocating, and reduce memory pressure
+      let result: PuzzleRecord[] = Array(totalLen);
+      let i = 0;
       for (const key of sortedKeys) {
         const puzzles = this.inner.get(key)!;
-        result.push(...puzzles);
+        for (const puzzle of puzzles) {
+          result[i] = puzzle;
+          i++;
+        }
       }
+      console.assert(i === totalLen, "Total length mismatch in sorted puzzles");
       return result;
     } else {
       return this.inner as PuzzleRecord[];
@@ -135,25 +145,24 @@ async function readFilterSortPuzzleDb(
       });
     }
   }
-  let puzzles = results.listSorted();
-  console.log(`Total puzzles after filtering: ${puzzles.length}`);
+  const puzzles = results.listSorted();
   if (opts.maxPuzzles !== undefined) {
     update(`Only keeping firsts ${opts.maxPuzzles} `);
-    puzzles = puzzles.slice(0, opts.maxPuzzles);
+    puzzles.length = Math.min(puzzles.length, opts.maxPuzzles);
   }
   return puzzles;
 }
 
 async function toPgn(
   opts: PgnFilerSortExportOptions,
-  rowReadChunkSize: number,
+  recordToPGNChunkSize: number,
   nbPuzzles: number,
 ): Promise<void> {
   const state = await statePromise;
   let chunkNo = 0;
   for await (const puzzlesChunk of state.tmp.iteratePuzzleRecordsChunks()) {
     update(
-      `Exporting puzzles to PGN... (${chunkNo * rowReadChunkSize}/${nbPuzzles})`,
+      `Exporting puzzles to PGN... (${chunkNo * recordToPGNChunkSize}/${nbPuzzles})`,
     );
     const pgnChunk = puzzlesChunk
       .map((puzzle) => puzzleToPGN(puzzle, opts))
@@ -167,21 +176,21 @@ self.onmessage = async (event: MessageEvent<MainMessage>) => {
   const msg = event.data;
   switch (msg.tpe) {
     case "sendWork":
-      const rowReadChunkSize = msg.work.rowReadChunkSize;
+      const recordToPGNChunkSize = msg.work.recordToPGNChunkSize;
       let puzzles: PuzzleRecord[] | undefined = await readFilterSortPuzzleDb(
         msg.work.opts,
-        rowReadChunkSize,
+        msg.work.rowReadChunkSize,
       );
       const nbPuzzles = puzzles.length;
       const state = await statePromise;
-      for (let i = 0; i < puzzles.length / rowReadChunkSize; i++) {
-        const start = i * rowReadChunkSize;
-        const end = Math.min(start + rowReadChunkSize, puzzles.length);
-        log(`Dumping puzzle records chunk ${i} (${start}/${nbPuzzles})...`);
+      for (let i = 0; i < puzzles.length / recordToPGNChunkSize; i++) {
+        const start = i * recordToPGNChunkSize;
+        const end = Math.min(start + recordToPGNChunkSize, puzzles.length);
+        update(`Prepating for PGN export (${start}/${nbPuzzles})...`);
         state.tmp.setPuzzleRecordChunk(i, puzzles.slice(start, end));
       }
-      puzzles = undefined; // make sure to free memory
-      await toPgn(msg.work.opts, rowReadChunkSize, nbPuzzles);
+      puzzles = undefined; // free memory
+      await toPgn(msg.work.opts, recordToPGNChunkSize, nbPuzzles);
       self.postMessage({ tpe: "workDone" });
       break;
   }

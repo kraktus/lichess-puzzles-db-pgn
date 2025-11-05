@@ -4,7 +4,12 @@ import { type PgnFilerSortExportOptions, type PuzzleRecord } from "./pgn";
 import { Status } from "./view";
 import { sortingIncludingBigInt } from "./util";
 import { log } from "./log";
-import { LIST_PARQUET_PATHS_KEY, Tmp, type WorkerMessge } from "./protocol";
+import {
+  LIST_PARQUET_PATHS_KEY,
+  Tmp,
+  type WorkerMessge,
+  type SendWork,
+} from "./protocol";
 import ParquetWorker from "./workers/parquetWorker?worker";
 
 const REPO_ID = "datasets/Lichess/chess-puzzles";
@@ -95,12 +100,15 @@ export class Parquet {
       throw new Error("Parquet files need to be downloaded/refreshed first.");
     }
     const worker = new ParquetWorker();
+    const work: SendWork = {
+      opts: opts,
+      rowReadChunkSize: this.rowReadChunkSize,
+      recordToPGNChunkSize: 20_000,
+    };
+
     worker.postMessage({
       tpe: "sendWork",
-      work: {
-        opts: opts,
-        rowReadChunkSize: this.rowReadChunkSize,
-      },
+      work,
     });
     await new Promise<void>((resolve, reject) => {
       worker.onmessage = (event: MessageEvent<WorkerMessge>) => {
@@ -126,6 +134,7 @@ export class Parquet {
 
   async pgnPipeline(opts: PgnFilerSortExportOptions): Promise<void> {
     log.log(`Starting PGN export pipeline, ops ${JSON.stringify(opts)}`);
+    await this.db.stores.tmp.clear();
     // we only want to restart a download if not alreay wip
     if (this.downloadNeeded({ ifAlreadyWip: false })) {
       await this.download();
